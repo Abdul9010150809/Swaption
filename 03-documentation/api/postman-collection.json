@@ -1,0 +1,155 @@
+{
+  "info": {
+    "name": "Price Matrix API",
+    "description": "Financial derivative pricing API collection",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "item": [
+    {
+      "name": "Health Check",
+      "item": [
+        {
+          "name": "Get Health Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            },
+            "description": "Check the health status of the API"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Pricing",
+      "item": [
+        {
+          "name": "Price European Option",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"spot_price\": 100.0,\n  \"strike_price\": 105.0,\n  \"time_to_expiry\": 1.0,\n  \"risk_free_rate\": 0.05,\n  \"volatility\": 0.20,\n  \"option_type\": \"call\",\n  \"dividend_yield\": 0.0\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/pricing/options",
+              "host": ["{{base_url}}"],
+              "path": ["api", "pricing", "options"]
+            },
+            "description": "Price a European option using the pricing engine"
+          }
+        },
+        {
+          "name": "Price European Swaption",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"swap_rate\": 0.03,\n  \"strike_rate\": 0.035,\n  \"option_tenor\": 1.0,\n  \"swap_tenor\": 5.0,\n  \"volatility\": 0.15\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/pricing/swaptions",
+              "host": ["{{base_url}}"],
+              "path": ["api", "pricing", "swaptions"]
+            },
+            "description": "Price a European swaption using the pricing engine"
+          }
+        },
+        {
+          "name": "Batch Pricing",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"instruments\": [\n    {\n      \"type\": \"option\",\n      \"parameters\": {\n        \"spot_price\": 100.0,\n        \"strike_price\": 105.0,\n        \"time_to_expiry\": 1.0,\n        \"risk_free_rate\": 0.05,\n        \"volatility\": 0.20,\n        \"option_type\": \"call\"\n      }\n    },\n    {\n      \"type\": \"swaption\",\n      \"parameters\": {\n        \"swap_rate\": 0.03,\n        \"strike_rate\": 0.035,\n        \"option_tenor\": 1.0,\n        \"swap_tenor\": 5.0,\n        \"volatility\": 0.15\n      }\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/pricing/batch",
+              "host": ["{{base_url}}"],
+              "path": ["api", "pricing", "batch"]
+            },
+            "description": "Price multiple instruments in a single batch request"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Risk Analysis",
+      "item": [
+        {
+          "name": "Calculate VaR",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"returns\": [0.01, -0.005, 0.008, -0.012, 0.006, 0.003, -0.009, 0.014, -0.002, 0.007],\n  \"confidence_level\": 0.95,\n  \"time_horizon\": 1,\n  \"method\": \"parametric\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/risk/var",
+              "host": ["{{base_url}}"],
+              "path": ["api", "risk", "var"]
+            },
+            "description": "Calculate Value at Risk for a portfolio"
+          }
+        },
+        {
+          "name": "Stress Testing",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"portfolio_returns\": [0.01, -0.005, 0.008, -0.012, 0.006],\n  \"stress_scenarios\": {\n    \"market_crash\": -0.20,\n    \"moderate_stress\": -0.10,\n    \"mild_stress\": -0.05\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/risk/stress-test",
+              "host": ["{{base_url}}"],
+              "path": ["api", "risk", "stress-test"]
+            },
+            "description": "Perform stress testing on a portfolio"
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    }
+  ]
+}

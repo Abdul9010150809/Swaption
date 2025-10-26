@@ -1,0 +1,19 @@
+fastapi>=0.68.0
+uvicorn>=0.15.0
+pydantic>=1.8.0
+numpy>=1.21.0
+tensorflow>=2.8.0
+scikit-learn>=1.0.0
+pandas>=1.3.0
+joblib>=1.0.0
+python-multipart>=0.0.5
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+aiofiles>=0.7.0
+gunicorn>=20.1.0
+
+# Quantum Computing Dependencies (for production ML service)
+qiskit>=0.44.0
+qiskit-aer>=0.12.0
+qiskit-ibm-runtime>=0.11.0
+qiskit-machine-learning>=0.7.0

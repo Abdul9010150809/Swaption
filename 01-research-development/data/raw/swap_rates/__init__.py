@@ -1,0 +1,1 @@
+# Swap rates data directory

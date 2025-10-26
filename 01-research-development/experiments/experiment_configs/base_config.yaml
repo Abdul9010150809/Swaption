@@ -1,0 +1,211 @@
+# Base configuration for PriceMatrix experiments
+model:
+  # Neural Network parameters
+  hidden_layers: [256, 128, 64]
+  learning_rate: 0.001
+  dropout_rate: 0.2
+  batch_size: 32
+  epochs: 100
+  activation: 'relu'
+  output_activation: 'linear'
+  l2_reg: 0.0001
+
+  # Random Forest parameters
+  n_estimators: 100
+  max_depth: null
+  min_samples_split: 2
+  min_samples_leaf: 1
+  max_features: 'sqrt'
+
+  # Ensemble parameters
+  ensemble_method: 'weighted'
+  n_base_models: 3
+
+  # Training parameters
+  validation_split: 0.2
+  early_stopping_patience: 20
+  reduce_lr_patience: 10
+  reduce_lr_factor: 0.5
+
+  # Model saving
+  save_best_only: true
+  save_weights_only: false
+  model_checkpoint_dir: 'models/checkpoints'
+
+data:
+  # Data generation parameters
+  n_samples: 100000
+  random_seed: 42
+
+  # Yield curve parameters
+  yield_tenors: [0.25, 0.5, 1, 2, 3, 5, 7, 10, 20, 30]
+  base_rate: 0.03
+  rate_volatility: 0.005
+
+  # Volatility surface parameters
+  volatility_expiries: [0.25, 0.5, 1, 2, 5]
+  volatility_strikes: [0.8, 0.9, 1.0, 1.1, 1.2]
+  vol_base_level: 0.2
+  vol_term_structure: true
+  vol_skew: true
+
+  # Option parameters
+  spot_range: [90.0, 110.0]
+  strike_range: [85.0, 115.0]
+  time_range: [0.1, 2.0]
+  rate_range: [0.01, 0.08]
+  vol_range: [0.1, 0.5]
+
+  # Swaption parameters
+  swap_rates_range: [0.02, 0.08]
+  volatilities_range: [0.1, 0.8]
+  swap_tenors: [1, 2, 3, 5, 10]
+  option_tenors: [1, 2, 3, 5]
+
+  # Data processing
+  test_size: 0.2
+  val_size: 0.1
+  scaling_method: 'standard'
+  handle_outliers: true
+  outlier_method: 'iqr'
+  outlier_threshold: 1.5
+
+pricing:
+  # Monte Carlo parameters
+  n_simulations: 10000
+  n_steps: 252
+  time_horizon: 1.0
+
+  # Black-Scholes parameters
+  dividend_yield: 0.0
+
+  # SABR parameters
+  sabr_alpha: 0.2
+  sabr_beta: 0.7
+  sabr_rho: -0.3
+  sabr_nu: 0.3
+
+  # Numerical methods
+  tolerance: 0.000001
+  max_iterations: 100
+
+  # Variance reduction
+  use_antithetic: false
+  use_control_variates: false
+  use_importance_sampling: false
+
+risk:
+  # VaR parameters
+  confidence_levels: [0.95, 0.99]
+  time_horizons: [1, 5, 10]
+  var_methods: ['historical', 'parametric', 'monte_carlo']
+
+  # Risk factor shocks
+  spot_shock: 0.01
+  vol_shock: 0.01
+  rate_shock: 0.0001
+  time_decay: 1
+
+  # Stress testing
+  stress_scenarios:
+    mild_stress: -0.05
+    moderate_stress: -0.10
+    severe_stress: -0.20
+    black_swan: -0.30
+
+  # Backtesting
+  backtest_window: 252
+  var_model_update_freq: 21
+
+experiment:
+  # Experiment tracking
+  experiment_name: 'base_experiment'
+  run_name: null
+  log_to_mlflow: true
+  log_to_wandb: false
+
+  # Hyperparameter tuning
+  tune_hyperparameters: false
+  tuning_method: 'grid'
+  n_trials: 50
+  cv_folds: 5
+
+  # Model evaluation
+  evaluation_metrics: ['mse', 'rmse', 'mae', 'r2', 'mape']
+
+  # Cross-validation
+  use_cv: true
+  cv_method: 'kfold'
+  n_cv_splits: 5
+
+  # Feature selection
+  feature_selection: false
+  selection_method: 'recursive'
+  max_features: null
+
+system:
+  # Logging
+  log_level: 'INFO'
+  log_to_file: true
+  log_to_console: true
+
+  # Parallel processing
+  n_jobs: -1
+  use_gpu: true
+
+  # Memory management
+  max_memory_gb: 8.0
+  chunk_size: 10000
+
+  # API settings
+  api_host: '0.0.0.0'
+  api_port: 8000
+  api_workers: 4
+
+  # Database
+  db_type: 'sqlite'
+  db_path: 'price_matrix.db'
+
+  # External services
+  use_mlflow: true
+  mlflow_tracking_uri: 'http://localhost:5000'
+  use_wandb: false
+  wandb_project: 'price-matrix'
+
+quantum:
+  # Quantum service settings
+  enabled: true
+  api_key: 'wPQOh--o2TjczKSr8xYZXZPudXBm4Ia6m__gdphs-5IR'
+  provider: 'ibm'
+  backend: 'simulator'
+  
+  # Quantum execution parameters
+  shots: 1024
+  max_circuits: 100
+  optimization_level: 1
+  
+  # IBM Quantum specific settings
+  ibm_hub: 'ibm-q'
+  ibm_group: 'open'
+  ibm_project: 'main'
+  
+  # AWS Braket specific settings
+  aws_region: 'us-east-1'
+  aws_s3_bucket: 'amazon-braket-quantum-results'
+  
+  # Google Quantum AI specific settings
+  google_project_id: ''
+  google_processor_id: 'rainbow'
+  
+  # Quantum algorithm settings
+  use_quantum_pricing: false
+  quantum_monte_carlo: false
+  quantum_optimization: false
+  
+  # Error mitigation
+  error_mitigation: true
+  readout_error_mitigation: true
+  
+  # Timeout settings
+  job_timeout: 300
+  max_retries: 3

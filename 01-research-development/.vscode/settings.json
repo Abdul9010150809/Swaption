@@ -1,0 +1,12 @@
+{
+  "python.defaultInterpreterPath": "/home/abdul/miniconda3/bin/python",
+  "python.analysis.extraPaths": [
+    "/home/abdul/Downloads/pricematrix",
+    "/home/abdul/Downloads/pricematrix/01-research-development",
+    "/home/abdul/Downloads/pricematrix/01-research-development/src",
+    "/home/abdul/Downloads/pricematrix/01-research-development"
+  ],
+  "python.analysis.autoImportCompletions": true,
+  "python.analysis.diagnosticMode": "workspace",
+  "python.analysis.useLibraryCodeForTypes": true
+}

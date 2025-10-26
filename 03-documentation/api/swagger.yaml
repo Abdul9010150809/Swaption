@@ -1,0 +1,327 @@
+openapi: 3.0.0
+info:
+  title: Price Matrix API
+  description: Financial derivative pricing API
+  version: 1.0.0
+  contact:
+    name: Price Matrix Team
+    email: support@pricematrix.com
+
+servers:
+  - url: http://localhost:3000
+    description: Development server
+  - url: https://api.pricematrix.com
+    description: Production server
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    OptionPricingRequest:
+      type: object
+      required:
+        - spot_price
+        - strike_price
+        - time_to_expiry
+        - risk_free_rate
+        - volatility
+        - option_type
+      properties:
+        spot_price:
+          type: number
+          format: float
+          minimum: 0
+          description: Current spot price of underlying asset
+        strike_price:
+          type: number
+          format: float
+          minimum: 0
+          description: Option strike price
+        time_to_expiry:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 10
+          description: Time to expiry in years
+        risk_free_rate:
+          type: number
+          format: float
+          minimum: -0.1
+          maximum: 0.2
+          description: Risk-free interest rate (annual)
+        volatility:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 5
+          description: Implied volatility (annual)
+        option_type:
+          type: string
+          enum: [call, put]
+          description: Type of option
+        dividend_yield:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          default: 0.0
+          description: Dividend yield (annual)
+
+    SwaptionPricingRequest:
+      type: object
+      required:
+        - swap_rate
+        - strike_rate
+        - option_tenor
+        - swap_tenor
+        - volatility
+      properties:
+        swap_rate:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 0.2
+          description: Current swap rate
+        strike_rate:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 0.2
+          description: Strike swap rate
+        option_tenor:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 10
+          description: Time to option expiry in years
+        swap_tenor:
+          type: number
+          format: float
+          minimum: 0.5
+          maximum: 50
+          description: Underlying swap tenor in years
+        volatility:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 2
+          description: Swaption volatility
+
+    PricingResponse:
+      type: object
+      properties:
+        price:
+          type: number
+          format: float
+          description: Calculated price
+        confidence_interval:
+          type: object
+          properties:
+            lower:
+              type: number
+              format: float
+            upper:
+              type: number
+              format: float
+        model:
+          type: string
+          description: Model used for pricing
+        timestamp:
+          type: string
+          format: date-time
+          description: Calculation timestamp
+        calculation_time:
+          type: number
+          format: float
+          description: Calculation time in seconds
+
+    BatchPricingRequest:
+      type: object
+      required:
+        - instruments
+      properties:
+        instruments:
+          type: array
+          minItems: 1
+          maxItems: 50
+          items:
+            type: object
+            required:
+              - type
+              - parameters
+            properties:
+              type:
+                type: string
+                enum: [option, swaption]
+              parameters:
+                type: object
+                description: Instrument-specific parameters
+
+    BatchPricingResponse:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            type: object
+            properties:
+              instrument_id:
+                type: string
+              type:
+                type: string
+              result:
+                $ref: '#/components/schemas/PricingResponse'
+              success:
+                type: boolean
+              error:
+                type: string
+        summary:
+          type: object
+          properties:
+            total:
+              type: integer
+            successful:
+              type: integer
+            failed:
+              type: integer
+        timestamp:
+          type: string
+          format: date-time
+        total_calculation_time:
+          type: number
+          format: float
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, unhealthy]
+        timestamp:
+          type: string
+          format: date-time
+        version:
+          type: string
+        models_loaded:
+          type: boolean
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+security:
+  - bearerAuth: []
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      description: Check the health status of the API
+      responses:
+        '200':
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /api/pricing/options:
+    post:
+      summary: Price European option
+      description: Calculate the price of a European option
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OptionPricingRequest'
+      responses:
+        '200':
+          description: Option priced successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PricingResponse'
+        '400':
+          description: Invalid input parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/pricing/swaptions:
+    post:
+      summary: Price European swaption
+      description: Calculate the price of a European swaption
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SwaptionPricingRequest'
+      responses:
+        '200':
+          description: Swaption priced successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PricingResponse'
+        '400':
+          description: Invalid input parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/pricing/batch:
+    post:
+      summary: Batch pricing
+      description: Price multiple instruments in a single request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchPricingRequest'
+      responses:
+        '200':
+          description: Batch pricing completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchPricingResponse'
+        '400':
+          description: Invalid input parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'

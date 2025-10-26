@@ -1,0 +1,213 @@
+# Advanced configuration for PriceMatrix experiments with quantum computing features
+model:
+  # Neural Network parameters (enhanced for quantum hybrid models)
+  hidden_layers: [512, 256, 128, 64]
+  learning_rate: 0.0005
+  dropout_rate: 0.3
+  batch_size: 64
+  epochs: 200
+  activation: 'relu'
+  output_activation: 'linear'
+  l2_reg: 0.00005
+
+  # Random Forest parameters (optimized)
+  n_estimators: 200
+  max_depth: 15
+  min_samples_split: 5
+  min_samples_leaf: 2
+  max_features: 'log2'
+
+  # Ensemble parameters (quantum-enhanced)
+  ensemble_method: 'quantum_weighted'
+  n_base_models: 5
+
+  # Training parameters
+  validation_split: 0.15
+  early_stopping_patience: 30
+  reduce_lr_patience: 15
+  reduce_lr_factor: 0.3
+
+  # Model saving
+  save_best_only: true
+  save_weights_only: false
+  model_checkpoint_dir: 'models/checkpoints'
+
+data:
+  # Data generation parameters (larger dataset for quantum experiments)
+  n_samples: 500000
+  random_seed: 42
+
+  # Yield curve parameters (extended)
+  yield_tenors: [0.08, 0.25, 0.5, 1, 2, 3, 5, 7, 10, 15, 20, 30, 50]
+  base_rate: 0.025
+  rate_volatility: 0.008
+
+  # Volatility surface parameters (enhanced)
+  volatility_expiries: [0.08, 0.25, 0.5, 1, 2, 3, 5, 7, 10]
+  volatility_strikes: [0.7, 0.8, 0.9, 0.95, 1.0, 1.05, 1.1, 1.2, 1.3]
+  vol_base_level: 0.18
+  vol_term_structure: true
+  vol_skew: true
+
+  # Option parameters (extended ranges)
+  spot_range: [80.0, 120.0]
+  strike_range: [75.0, 125.0]
+  time_range: [0.02, 5.0]
+  rate_range: [0.005, 0.12]
+  vol_range: [0.05, 0.8]
+
+  # Swaption parameters (extended)
+  swap_rates_range: [0.01, 0.12]
+  volatilities_range: [0.05, 1.2]
+  swap_tenors: [0.5, 1, 2, 3, 5, 7, 10, 15, 20, 30]
+  option_tenors: [0.25, 0.5, 1, 2, 3, 5, 7, 10]
+
+  # Data processing (advanced)
+  test_size: 0.15
+  val_size: 0.15
+  scaling_method: 'robust'
+  handle_outliers: true
+  outlier_method: 'isolation_forest'
+  outlier_threshold: 0.1
+
+pricing:
+  # Monte Carlo parameters (quantum-enhanced)
+  n_simulations: 100000
+  n_steps: 500
+  time_horizon: 2.0
+
+  # Black-Scholes parameters
+  dividend_yield: 0.02
+
+  # SABR parameters (calibrated)
+  sabr_alpha: 0.15
+  sabr_beta: 0.8
+  sabr_rho: -0.4
+  sabr_nu: 0.4
+
+  # Numerical methods (high precision)
+  tolerance: 0.0000001
+  max_iterations: 200
+
+  # Variance reduction (all enabled)
+  use_antithetic: true
+  use_control_variates: true
+  use_importance_sampling: true
+
+risk:
+  # VaR parameters (comprehensive)
+  confidence_levels: [0.90, 0.95, 0.99, 0.995]
+  time_horizons: [1, 5, 10, 21, 63, 252]
+  var_methods: ['historical', 'parametric', 'monte_carlo', 'quantum_var']
+
+  # Risk factor shocks (enhanced)
+  spot_shock: 0.005
+  vol_shock: 0.005
+  rate_shock: 0.00005
+  time_decay: 1
+
+  # Stress testing (comprehensive scenarios)
+  stress_scenarios:
+    mild_stress: -0.03
+    moderate_stress: -0.08
+    severe_stress: -0.15
+    extreme_stress: -0.25
+    black_swan: -0.40
+    quantum_scenario: -0.50
+
+  # Backtesting (extended)
+  backtest_window: 500
+  var_model_update_freq: 10
+
+experiment:
+  # Experiment tracking
+  experiment_name: 'quantum_advanced_experiment'
+  run_name: 'quantum_hybrid_v1'
+  log_to_mlflow: true
+  log_to_wandb: true
+
+  # Hyperparameter tuning (extensive)
+  tune_hyperparameters: true
+  tuning_method: 'bayesian'
+  n_trials: 200
+  cv_folds: 10
+
+  # Model evaluation (comprehensive metrics)
+  evaluation_metrics: ['mse', 'rmse', 'mae', 'r2', 'mape', 'smape', 'directional_accuracy', 'quantum_fidelity']
+
+  # Cross-validation (advanced)
+  use_cv: true
+  cv_method: 'time_series_split'
+  n_cv_splits: 10
+
+  # Feature selection (quantum-enhanced)
+  feature_selection: true
+  selection_method: 'quantum_feature_selection'
+  max_features: 50
+
+system:
+  # Logging (detailed)
+  log_level: 'DEBUG'
+  log_to_file: true
+  log_to_console: true
+
+  # Parallel processing (optimized)
+  n_jobs: -1
+  use_gpu: true
+
+  # Memory management (high-performance)
+  max_memory_gb: 32.0
+  chunk_size: 50000
+
+  # API settings (production-ready)
+  api_host: '0.0.0.0'
+  api_port: 8000
+  api_workers: 8
+
+  # Database (advanced)
+  db_type: 'postgresql'
+  db_path: 'postgresql://user:pass@localhost:5432/pricematrix'
+
+  # External services
+  use_mlflow: true
+  mlflow_tracking_uri: 'http://localhost:5000'
+  use_wandb: true
+  wandb_project: 'price-matrix-quantum'
+
+quantum:
+  # Quantum service settings (production)
+  enabled: true
+  api_key: 'wPQOh--o2TjczKSr8xYZXZPudXBm4Ia6m__gdphs-5IR'
+  provider: 'ibm'
+  backend: 'ibmq_qasm_simulator'
+  
+  # Quantum execution parameters (optimized)
+  shots: 8192
+  max_circuits: 500
+  optimization_level: 3
+  
+  # IBM Quantum specific settings
+  ibm_hub: 'ibm-q-academic'
+  ibm_group: 'university'
+  ibm_project: 'finance-research'
+  
+  # AWS Braket specific settings
+  aws_region: 'us-west-2'
+  aws_s3_bucket: 'quantum-finance-results'
+  
+  # Google Quantum AI specific settings
+  google_project_id: 'quantum-finance-project'
+  google_processor_id: 'weber'
+  
+  # Quantum algorithm settings (all enabled)
+  use_quantum_pricing: true
+  quantum_monte_carlo: true
+  quantum_optimization: true
+  
+  # Error mitigation (comprehensive)
+  error_mitigation: true
+  readout_error_mitigation: true
+  
+  # Timeout settings (extended for complex calculations)
+  job_timeout: 1800
+  max_retries: 5
