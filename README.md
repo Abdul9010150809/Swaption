@@ -1,4 +1,4 @@
-# Quantum-finance-swaping-
+# Quantum-finance-swaping-pricing
 
 A quantum-enhanced financial analytics platform for swaption pricing and risk management. Financial institutions struggle with slow and inaccurate swaption pricing using traditional methods. The main challenges are computational complexity and unrealistic market assumptions. This affects trading profits, risk management, and regulatory compliance.
 
