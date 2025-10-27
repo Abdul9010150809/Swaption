@@ -19,6 +19,7 @@ import requests
 from io import StringIO
 import warnings
 warnings.filterwarnings('ignore')
+from kaggle.api.kaggle_api_extended import KaggleApi
 
 # Matplotlib imports for quantum circuit visualization
 try:
@@ -3567,9 +3568,9 @@ def show_kaggle_data(kaggle_manager, pricer):
     
     # Data Loading Controls
     st.markdown("### 📥 Data Loading")
-    
+
     col1, col2, col3 = st.columns(3)
-    
+
     with col1:
         if st.button("📈 Load Interest Rate Data", type="primary", key="kaggle_rates"):
             with st.spinner("Loading interest rate data from Kaggle..."):
@@ -3579,17 +3580,26 @@ def show_kaggle_data(kaggle_manager, pricer):
                         st.session_state.rates_data = df
                         st.session_state.rates_loaded = True
                         st.success(f"✅ Loaded {len(df)} interest rate records!")
-                        
+
                         # Show data preview
                         with st.expander("📋 Data Preview"):
                             st.dataframe(df.head(10), use_container_width=True)
                             st.write(f"**Date Range:** {df['date'].min()} to {df['date'].max()}")
                     else:
-                        st.error("❌ Failed to load interest rate data")
-                        
+                        st.warning("⚠️ Could not load interest rates from Kaggle; falling back to synthetic data.")
+                        # Generate synthetic data for demonstration
+                        synthetic_rates = kaggle_manager._generate_synthetic_rates()
+                        st.session_state.rates_data = synthetic_rates
+                        st.session_state.rates_loaded = True
+                        st.info(f"📊 Using synthetic interest rate data ({len(synthetic_rates)} records)")
+
                 except Exception as e:
-                    st.error(f"❌ Failed to load interest rate data: {e}")
-    
+                    st.warning(f"⚠️ Could not load interest rates from Kaggle; falling back to synthetic data.")
+                    synthetic_rates = kaggle_manager._generate_synthetic_rates()
+                    st.session_state.rates_data = synthetic_rates
+                    st.session_state.rates_loaded = True
+                    st.info(f"📊 Using synthetic interest rate data ({len(synthetic_rates)} records)")
+
     with col2:
         if st.button("📊 Load Yield Curve Data", type="primary", key="kaggle_yield"):
             with st.spinner("Loading yield curve data from Kaggle..."):
@@ -3599,18 +3609,26 @@ def show_kaggle_data(kaggle_manager, pricer):
                         st.session_state.yield_data = df
                         st.session_state.yield_loaded = True
                         st.success(f"✅ Loaded {len(df)} yield curve records!")
-                        
+
                         # Show data preview
                         with st.expander("📋 Data Preview"):
                             st.dataframe(df.head(10), use_container_width=True)
                             if 'date' in df.columns:
                                 st.write(f"**Date Range:** {df['date'].min()} to {df['date'].max()}")
                     else:
-                        st.error("❌ Failed to load yield curve data")
-                        
+                        st.warning("⚠️ Could not load yield curve from Kaggle; falling back to synthetic data.")
+                        synthetic_yield = kaggle_manager._generate_synthetic_yield_curve()
+                        st.session_state.yield_data = synthetic_yield
+                        st.session_state.yield_loaded = True
+                        st.info(f"📊 Using synthetic yield curve data ({len(synthetic_yield)} records)")
+
                 except Exception as e:
-                    st.error(f"❌ Failed to load yield curve data: {e}")
-    
+                    st.warning(f"⚠️ Could not load yield curve from Kaggle; falling back to synthetic data.")
+                    synthetic_yield = kaggle_manager._generate_synthetic_yield_curve()
+                    st.session_state.yield_data = synthetic_yield
+                    st.session_state.yield_loaded = True
+                    st.info(f"📊 Using synthetic yield curve data ({len(synthetic_yield)} records)")
+
     with col3:
         if st.button("🔄 Clear Cache", type="secondary", key="kaggle_clear"):
             st.session_state.rates_data = None
