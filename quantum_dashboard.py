@@ -1135,7 +1135,7 @@ def display_feature_importance(model_name, feature_names, importance):
     # This function is called but not defined  
     pass
 def show_live_pricing(pricer, classical_ml, quantum_ml):
-    """Simplified live pricing that actually calculates swaption prices"""
+    """Live pricing that calculates both traditional and quantum swaption prices"""
     
     st.markdown("## 🎯 Live Swaption Pricing Calculator")
     
@@ -1169,6 +1169,12 @@ def show_live_pricing(pricer, classical_ml, quantum_ml):
             ["Payer Swaption", "Receiver Swaption"]
         )
         risk_free_rate = st.number_input("Risk-Free Rate (%)", 1.0, 10.0, 5.3, 0.1) / 100
+        
+        # Quantum configuration
+        st.markdown("#### ⚛️ Quantum Settings")
+        quantum_enabled = st.checkbox("Enable Quantum Pricing", value=True)
+        quantum_weight = st.slider("Quantum Influence", 0.0, 1.0, 0.3, 
+                                 help="How much quantum correction to apply")
 
     # Display current parameters
     st.markdown("### 📋 Current Parameters")
@@ -1184,11 +1190,11 @@ def show_live_pricing(pricer, classical_ml, quantum_ml):
         st.metric("Volatility", f"{volatility:.1%}")
 
     # Calculate button
-    if st.button("🎯 Calculate Swaption Price", type="primary", use_container_width=True):
-        with st.spinner("Calculating swaption price..."):
+    if st.button("🎯 Calculate Swaption Prices", type="primary", use_container_width=True):
+        with st.spinner("Calculating traditional and quantum prices..."):
             try:
-                # Use a simplified Black-76 calculation that actually works
-                price = calculate_simple_black76(
+                # Calculate traditional price
+                traditional_price = calculate_simple_black76(
                     notional=notional,
                     forward_rate=forward_rate,
                     strike=strike,
@@ -1198,9 +1204,58 @@ def show_live_pricing(pricer, classical_ml, quantum_ml):
                     risk_free_rate=risk_free_rate
                 )
                 
-                # Store the result
+                # Calculate quantum price if enabled
+                quantum_price = traditional_price
+                quantum_expectation = 0.5
+                quantum_details = {}
+                
+                if quantum_enabled and quantum_ml:
+                    try:
+                        # Configure quantum backend
+                        quantum_ml.configure_backend(
+                            optimization_level=1,
+                            error_mitigation=False,
+                            shots=1024
+                        )
+                        
+                        # Prepare features for quantum circuit
+                        features = [
+                            forward_rate,
+                            strike, 
+                            volatility,
+                            expiry,
+                            tenor,
+                            notional / 1000000  # Scale down for quantum
+                        ]
+                        
+                        # Run quantum circuit
+                        quantum_expectation, circuit, counts = quantum_ml.run_advanced_circuit(
+                            "feature_map_advanced",
+                            features=features,
+                            show_diagram=False
+                        )
+                        
+                        # Apply quantum correction to traditional price
+                        quantum_correction = (quantum_expectation - 0.5) * 0.25  # Scale correction
+                        quantum_price = traditional_price * (1 + quantum_correction * quantum_weight)
+                        
+                        quantum_details = {
+                            'expectation': quantum_expectation,
+                            'correction': quantum_correction,
+                            'circuit_used': "feature_map_advanced",
+                            'shots': 1024
+                        }
+                        
+                    except Exception as quantum_error:
+                        st.warning(f"⚠️ Quantum calculation failed: {quantum_error}")
+                        quantum_price = traditional_price
+                
+                # Store both results
                 st.session_state.live_price_result = {
-                    'price': price,
+                    'traditional_price': traditional_price,
+                    'quantum_price': quantum_price,
+                    'quantum_enabled': quantum_enabled,
+                    'quantum_details': quantum_details,
                     'notional': notional,
                     'forward_rate': forward_rate,
                     'strike': strike,
@@ -1210,14 +1265,16 @@ def show_live_pricing(pricer, classical_ml, quantum_ml):
                     'timestamp': datetime.now()
                 }
                 
-                st.success("✅ Price calculation completed!")
+                st.success("✅ Price calculations completed!")
                 
             except Exception as e:
                 st.error(f"❌ Pricing calculation failed: {str(e)}")
                 # Fallback calculation
                 fallback_price = calculate_fallback_price(notional, forward_rate, strike, expiry)
                 st.session_state.live_price_result = {
-                    'price': fallback_price,
+                    'traditional_price': fallback_price,
+                    'quantum_price': fallback_price,
+                    'quantum_enabled': False,
                     'notional': notional,
                     'forward_rate': forward_rate,
                     'strike': strike,
@@ -1228,6 +1285,265 @@ def show_live_pricing(pricer, classical_ml, quantum_ml):
                     'note': 'Used fallback calculation'
                 }
                 st.warning(f"⚠️ Using fallback calculation: ${fallback_price:,.0f}")
+
+    # Display results - BOTH TRADITIONAL AND QUANTUM
+    if 'live_price_result' in st.session_state:
+        result = st.session_state.live_price_result
+        
+        st.markdown("---")
+        st.markdown("## 💰 Swaption Price Results")
+        
+        # Main price comparison
+        col_price1, col_price2, col_price3 = st.columns(3)
+        
+        with col_price1:
+            st.markdown("### 🏛️ Traditional")
+            st.markdown(f"# **${result['traditional_price']:,.0f}**")
+            st.caption("Black-76 Model")
+            
+        with col_price2:
+            if result['quantum_enabled']:
+                st.markdown("### ⚛️ Quantum")
+                st.markdown(f"# **${result['quantum_price']:,.0f}**")
+                price_diff = result['quantum_price'] - result['traditional_price']
+                diff_pct = (price_diff / result['traditional_price']) * 100
+                st.caption(f"Quantum Enhanced ({diff_pct:+.1f}%)")
+            else:
+                st.markdown("### ⚛️ Quantum")
+                st.markdown("# **—**")
+                st.caption("Quantum disabled")
+                
+        with col_price3:
+            if result['quantum_enabled']:
+                st.markdown("### 📊 Comparison")
+                price_diff = result['quantum_price'] - result['traditional_price']
+                diff_pct = (price_diff / result['traditional_price']) * 100
+                
+                if abs(diff_pct) < 1:
+                    status = "🟰 Similar"
+                    color = "gray"
+                elif diff_pct > 0:
+                    status = "📈 Quantum Higher"
+                    color = "green"
+                else:
+                    status = "📉 Quantum Lower" 
+                    color = "red"
+                    
+                st.metric("Price Difference", f"${price_diff:,.0f}", f"{diff_pct:+.1f}%")
+                st.caption(status)
+            else:
+                st.markdown("### 📊 Comparison")
+                st.metric("Quantum Status", "Disabled", delta_color="off")
+        
+        # Price breakdown
+        with st.expander("📊 Detailed Price Breakdown"):
+            col_break1, col_break2 = st.columns(2)
+            
+            with col_break1:
+                st.markdown("#### 🏛️ Traditional Pricing")
+                st.write(f"**Calculation Method:** Black-76 Model")
+                st.write(f"**Notional:** ${result['notional']:,.0f}")
+                st.write(f"**Forward Rate:** {result['forward_rate']:.3%}")
+                st.write(f"**Strike Rate:** {result['strike']:.3%}")
+                st.write(f"**Expiry:** {result['expiry']:.1f} years")
+                st.write(f"**Volatility:** {result['volatility']:.1%}")
+                st.write(f"**Option Type:** {result['option_type']}")
+                
+            with col_break2:
+                if result['quantum_enabled']:
+                    st.markdown("#### ⚛️ Quantum Enhancement")
+                    st.write(f"**Quantum Expectation:** {result['quantum_details'].get('expectation', 0):.4f}")
+                    st.write(f"**Correction Factor:** {result['quantum_details'].get('correction', 0):.4f}")
+                    st.write(f"**Quantum Weight:** {quantum_weight:.0%}")
+                    st.write(f"**Circuit Used:** {result['quantum_details'].get('circuit_used', 'N/A')}")
+                    st.write(f"**Quantum Shots:** {result['quantum_details'].get('shots', 'N/A')}")
+                else:
+                    st.markdown("#### ⚛️ Quantum Enhancement")
+                    st.write("**Status:** Disabled")
+        
+        # Visualization
+        st.markdown("### 📈 Price Comparison")
+        
+        if result['quantum_enabled']:
+            # Create comparison chart
+            models = ['Traditional', 'Quantum']
+            prices = [result['traditional_price'], result['quantum_price']]
+            
+            fig = go.Figure()
+            fig.add_trace(go.Bar(
+                x=models,
+                y=prices,
+                marker_color=['blue', 'purple'],
+                text=[f"${p:,.0f}" for p in prices],
+                textposition='auto',
+            ))
+            fig.update_layout(
+                title='Traditional vs Quantum Swaption Pricing',
+                yaxis_title='Price ($)',
+                height=400
+            )
+            st.plotly_chart(fig, use_container_width=True)
+            
+            # Quantum expectation gauge
+            st.markdown("### 🔮 Quantum Expectation Analysis")
+            col_gauge1, col_gauge2 = st.columns(2)
+            
+            with col_gauge1:
+                # Expectation gauge
+                expectation = result['quantum_details'].get('expectation', 0.5)
+                fig_gauge = go.Figure(go.Indicator(
+                    mode = "gauge+number+delta",
+                    value = expectation,
+                    domain = {'x': [0, 1], 'y': [0, 1]},
+                    title = {'text': "Quantum Expectation"},
+                    delta = {'reference': 0.5, 'increasing': {'color': "green"}},
+                    gauge = {
+                        'axis': {'range': [0, 1]},
+                        'bar': {'color': "purple"},
+                        'steps': [
+                            {'range': [0, 0.3], 'color': "lightgray"},
+                            {'range': [0.3, 0.7], 'color': "gray"},
+                            {'range': [0.7, 1], 'color': "darkgray"}
+                        ],
+                        'threshold': {
+                            'line': {'color': "red", 'width': 4},
+                            'thickness': 0.75,
+                            'value': 0.5
+                        }
+                    }
+                ))
+                fig_gauge.update_layout(height=300)
+                st.plotly_chart(fig_gauge, use_container_width=True)
+                
+            with col_gauge2:
+                # Correction impact
+                correction = result['quantum_details'].get('correction', 0)
+                impact = correction * quantum_weight * 100
+                
+                st.metric("Quantum Correction", f"{impact:+.1f}%")
+                st.metric("Final Price Impact", f"${(result['quantum_price'] - result['traditional_price']):,.0f}")
+                
+                if abs(impact) > 5:
+                    st.info("🎯 Significant quantum impact detected")
+                elif abs(impact) > 2:
+                    st.info("📊 Moderate quantum impact")
+                else:
+                    st.info("⚡ Minimal quantum impact")
+
+        # Greeks calculation (simplified)
+        st.markdown("### 📉 Risk Metrics (Greeks)")
+        
+        try:
+            # Simplified Greeks calculation
+            d1 = (np.log(result['forward_rate']/result['strike']) + (result['volatility']**2/2)*result['expiry']) / (result['volatility'] * np.sqrt(result['expiry']))
+            
+            col_greeks1, col_greeks2, col_greeks3, col_greeks4 = st.columns(4)
+            
+            with col_greeks1:
+                delta = stats.norm.cdf(d1) if result['option_type'] == "Payer Swaption" else -stats.norm.cdf(-d1)
+                st.metric("Δ Delta", f"{delta:.4f}")
+                
+            with col_greeks2:
+                gamma = stats.norm.pdf(d1) / (result['forward_rate'] * result['volatility'] * np.sqrt(result['expiry']))
+                st.metric("Γ Gamma", f"{gamma:.6f}")
+                
+            with col_greeks3:
+                vega = result['forward_rate'] * np.sqrt(result['expiry']) * stats.norm.pdf(d1) * 0.01
+                st.metric("ν Vega", f"{vega:.4f}")
+                
+            with col_greeks4:
+                theta = - (result['forward_rate'] * result['volatility'] * stats.norm.pdf(d1)) / (2 * np.sqrt(result['expiry']))
+                st.metric("θ Theta", f"{theta:.4f}")
+                
+        except Exception as e:
+            st.warning("Could not calculate Greeks")
+
+        # Export results
+        st.markdown("### 💾 Export Results")
+        if st.button("📥 Download Price Results", use_container_width=True):
+            # Create results summary
+            results_summary = {
+                'Parameter': [
+                    'Traditional Price', 'Quantum Price', 'Price Difference', 
+                    'Difference %', 'Notional', 'Forward Rate', 'Strike Rate',
+                    'Expiry', 'Volatility', 'Option Type', 'Calculation Time'
+                ],
+                'Value': [
+                    f"${result['traditional_price']:,.0f}",
+                    f"${result['quantum_price']:,.0f}" if result['quantum_enabled'] else "N/A",
+                    f"${result['quantum_price'] - result['traditional_price']:,.0f}" if result['quantum_enabled'] else "N/A",
+                    f"{(result['quantum_price'] - result['traditional_price'])/result['traditional_price']*100:+.1f}%" if result['quantum_enabled'] else "N/A",
+                    f"${result['notional']:,.0f}",
+                    f"{result['forward_rate']:.3%}",
+                    f"{result['strike']:.3%}",
+                    f"{result['expiry']:.1f} years",
+                    f"{result['volatility']:.1%}",
+                    result['option_type'],
+                    result['timestamp'].strftime("%Y-%m-%d %H:%M:%S")
+                ]
+            }
+            
+            df_export = pd.DataFrame(results_summary)
+            csv_data = df_export.to_csv(index=False)
+            
+            st.download_button(
+                label="Download CSV",
+                data=csv_data,
+                file_name=f"swaption_pricing_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                mime="text/csv"
+            )
+
+def calculate_simple_black76(notional, forward_rate, strike, expiry, volatility, option_type, risk_free_rate=0.05):
+    """Simple and reliable Black-76 calculation"""
+    try:
+        # Basic input validation
+        if forward_rate <= 0 or strike <= 0 or expiry <= 0 or volatility <= 0:
+            raise ValueError("Invalid input parameters")
+        
+        # Calculate d1 and d2
+        d1 = (np.log(forward_rate / strike) + (volatility**2 / 2) * expiry) / (volatility * np.sqrt(expiry))
+        d2 = d1 - volatility * np.sqrt(expiry)
+        
+        # Simplified annuity factor (this is the key fix)
+        # For swaptions, annuity is approximately the tenor discounted at risk-free rate
+        annuity = (1 - np.exp(-risk_free_rate * expiry)) / risk_free_rate
+        
+        # Calculate option price
+        if option_type == "Payer Swaption":
+            price = annuity * (forward_rate * stats.norm.cdf(d1) - strike * stats.norm.cdf(d2))
+        else:  # Receiver Swaption
+            price = annuity * (strike * stats.norm.cdf(-d2) - forward_rate * stats.norm.cdf(-d1))
+        
+        # Apply notional and ensure positive price
+        final_price = max(notional * price, 1000)  # Minimum $1000
+        
+        return final_price
+        
+    except Exception as e:
+        # Fallback to a very simple calculation
+        raise e
+
+def calculate_fallback_price(notional, forward_rate, strike, expiry):
+    """Fallback price calculation when Black-76 fails"""
+    try:
+        # Very simple intrinsic value + time value approximation
+        intrinsic_value = max(forward_rate - strike, 0)
+        time_value = 0.01 * expiry  # Simple time value
+        
+        # Simple annuity approximation
+        annuity = expiry * 0.8
+        
+        price = notional * annuity * (intrinsic_value + time_value)
+        
+        # Ensure reasonable bounds
+        price = max(price, notional * 0.001)  # At least 0.1% of notional
+        price = min(price, notional * 0.1)    # At most 10% of notional
+        
+        return price
+        
+    except:
+        # Ultimate fallback
+        return notional * 0.01  # 1% of notional as final fallback
 def add_quantum_pricing_section(quantum_ml, pricing_parameters):
     """Add quantum pricing to the traditional calculator"""
     
