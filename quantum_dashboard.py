@@ -1654,13 +1654,19 @@ def show_live_pricing(pricer, classical_ml, quantum_ml):
                          delta_color="inverse" if classical_error_pct < 5 else "normal")
         
         with col_sum3:
-            if results['quantum_price']:
-                quantum_error = abs(results['quantum_price'] - results['true_price'])
-                quantum_error_pct = (quantum_error / results['true_price']) * 100
-                st.metric("Quantum ML ⚛️", f"${results['quantum_price']:,.0f}",
-                         delta=f"{quantum_error_pct:+.1f}%",
-                         delta_color="inverse" if quantum_error_pct < classical_error_pct else "normal")
+        if results['quantum_price']:
+        quantum_error = abs(results['quantum_price'] - results['true_price'])
+        quantum_error_pct = (quantum_error / results['true_price']) * 100
         
+        # Safe comparison - only compare if classical_error_pct exists
+        if results['classical_price'] and 'classical_error_pct' in locals():
+            delta_color = "inverse" if quantum_error_pct < classical_error_pct else "normal"
+        else:
+            delta_color = "normal"  # Default color if no classical comparison available
+            
+        st.metric("Quantum ML ⚛️", f"${results['quantum_price']:,.0f}",
+                 delta=f"{quantum_error_pct:+.1f}%",
+                 delta_color=delta_color)
         with col_sum4:
             if results['classical_price'] and results['quantum_price']:
                 quantum_advantage = ((classical_error - quantum_error) / classical_error) * 100
