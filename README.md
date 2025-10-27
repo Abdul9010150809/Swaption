@@ -1,7 +1,7 @@
 # Find Final Price of Swaptions by Using ML Given by Qiskit Hackathon SKLM
 
-**Team Name:** Quantum Finance Innovators
-**Institution:** RGUKT SKLM (Sri Kanyaka Parameshwari Institute)
+**Team Name:** CodeVerses
+**Institution:** RGUKT SKLM 
 **Hackathon:** Qiskit Hackathon 48 Hours
 **Date:** October 27, 2025
 **Location:** RGUKT SKLM Campus
@@ -33,7 +33,7 @@ Calculate the final price of swaptions using machine learning, specifically leve
 
 ---
 
-### 3. Motivation / Why This Problem
+### 3. Why This Problem
 
 Financial institutions struggle with slow and inaccurate swaption pricing using traditional methods. The main challenges are computational complexity and unrealistic market assumptions. This affects trading profits, risk management, and regulatory compliance. Traditional Monte Carlo simulations can take hours, while classical ML approaches lack the quantum advantage for handling high-dimensional financial data and complex volatility structures.
 
@@ -114,7 +114,7 @@ Our QNN implementation uses advanced quantum circuits to find final swaption pri
 
 ---
 
-### 7. Results / Demonstration
+### 7. Demonstration
 
 #### Performance Benchmarks
 - **Classical ML**: Sub-second predictions with MAE of $1,200
