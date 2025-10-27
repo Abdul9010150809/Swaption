@@ -1470,8 +1470,9 @@ def show_live_pricing(pricer, classical_ml, quantum_ml):
                     """
                     st.code(circuit_text, language='text')
                     
-            except Exception as e:
-                st.warning(f"Circuit preview generation failed: {e}")
+        except Exception as e:
+            st.warning(f"Circuit preview generation failed: {e}")
+    
     # Pricing Execution with Enhanced Options
     st.markdown("### 🚀 Execute Advanced Pricing")
     
