@@ -1135,6 +1135,10 @@ def display_feature_importance(model_name, feature_names, importance):
     # This function is called but not defined  
     pass
 def show_live_pricing(pricer, classical_ml, quantum_ml):
+    classical_error_pct = 0.0
+    quantum_error_pct = 0.0
+    classical_prediction = None
+    quantum_prediction = None
     """Enhanced live pricing with user-input market rates, advanced notation, and circuit generation"""
     
     st.markdown("## 🎯 Advanced Live Swaption Pricing & Quantum Advantage")
