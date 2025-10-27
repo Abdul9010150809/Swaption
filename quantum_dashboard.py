@@ -1140,9 +1140,9 @@ def show_live_pricing(pricer, classical_ml, quantum_ml):
     st.markdown("## 🎯 Advanced Live Swaption Pricing & Quantum Advantage")
 
     # Dual Swaption Type Selection
-st.markdown("### 🌍 Swaption Configuration")
-# Swaption configuration columns
-col_type1, col_type2, col_type3 = st.columns(3)
+    st.markdown("### 🌍 Swaption Configuration")
+    # Swaption configuration columns
+    col_type1, col_type2, col_type3 = st.columns(3)
 
     with col_type1:
         # Swaption Type 1: Payer/Receiver
