@@ -2851,15 +2851,14 @@ def calculate_system_health(classical_ml, quantum_ml, pricer):
     
     return int((score / max_score) * 100) if max_score > 0 else 0
 def show_classical_ml(classical_ml, pricer, quantum_ml):
-    """Enhanced Classical ML section with detailed results"""
-    # """Enhanced Classical ML section with dedicated ML pricing"""
+    """Enhanced Classical ML section with ML-driven pricing and quantum circuit generation"""
     
     st.markdown("## 🏛️ Advanced Classical Machine Learning")
     
-    # Add new ML Pricing Section at the top
+    # ML Pricing Calculator with Real-time Updates
     st.markdown("### 🎯 ML Swaption Pricing Calculator")
     
-    with st.expander("🚀 Quick ML Pricing", expanded=True):
+    with st.expander("🚀 Smart ML Pricing Dashboard", expanded=True):
         col_price1, col_price2, col_price3 = st.columns(3)
         
         with col_price1:
@@ -2877,880 +2876,448 @@ def show_classical_ml(classical_ml, pricer, quantum_ml):
             ml_forward_rate = st.number_input("Forward Rate (%)", 1.0, 10.0, 4.2, 0.1, 
                                             key="ml_price_forward") / 100
         
-        # Calculate traditional price for comparison
+        # Real-time price calculation
         traditional_price = pricer.black_76_swaption_price(
             ml_notional, ml_expiry, ml_tenor, ml_strike, "Payer Swaption", ml_volatility
         )
         
-        if st.button("🎯 Calculate ML Price", type="primary", key="ml_calculate_price"):
-            if classical_ml and classical_ml.models:
-                with st.spinner("Calculating ML price..."):
-                    try:
-                        # Prepare features for ML prediction
-                        features = [
-                            ml_forward_rate,
-                            ml_strike, 
-                            ml_volatility,
-                            ml_expiry,
-                            ml_tenor,
-                            ml_notional
-                        ]
-                        
-                        # Get ML prediction
-                        ml_price = classical_ml.predict_ensemble(features)
-                        
-                        # Calculate error
-                        error = ml_price - traditional_price
-                        error_pct = (error / traditional_price) * 100
-                        
-                        # Display results
-                        col_res1, col_res2, col_res3 = st.columns(3)
-                        
-                        with col_res1:
-                            st.metric(
-                                "Traditional Price", 
-                                f"${traditional_price:,.0f}",
-                                help="Black-76 model price"
-                            )
-                            
-                        with col_res2:
-                            st.metric(
-                                "ML Predicted Price", 
-                                f"${ml_price:,.0f}",
-                                delta=f"{error_pct:+.1f}%",
-                                delta_color="inverse" if abs(error_pct) > 5 else "normal",
-                                help="Machine learning ensemble prediction"
-                            )
-                            
-                        with col_res3:
-                            st.metric(
-                                "Absolute Error", 
-                                f"${abs(error):,.0f}",
-                                help="Difference between ML and traditional price"
-                            )
-                        
-                        # Show individual model predictions
-                        st.markdown("#### 🔍 Individual Model Predictions")
-                        individual_predictions = {}
-                        
-                        for model_name, model in classical_ml.models.items():
-                            try:
-                                pred = model.predict([features])[0]
-                                individual_predictions[model_name] = {
-                                    'price': pred,
-                                    'error': pred - traditional_price,
-                                    'error_pct': ((pred - traditional_price) / traditional_price) * 100
-                                }
-                            except Exception as e:
-                                individual_predictions[model_name] = f"Error: {e}"
-                        
-                        # Create comparison table
-                        comparison_data = []
-                        for model_name, result in individual_predictions.items():
-                            if isinstance(result, dict):
-                                comparison_data.append({
-                                    'Model': model_name,
-                                    'Price': f"${result['price']:,.0f}",
-                                    'Error': f"${result['error']:,.0f}",
-                                    'Error %': f"{result['error_pct']:.2f}%"
-                                })
-                        
-                        if comparison_data:
-                            st.dataframe(pd.DataFrame(comparison_data), use_container_width=True)
-                            
-                            # Visualization
-                            col_viz1, col_viz2 = st.columns(2)
-                            
-                            with col_viz1:
-                                # Price comparison chart
-                                models = ['Traditional'] + [f"ML {name}" for name in individual_predictions.keys()]
-                                prices = [traditional_price] + [result['price'] for result in individual_predictions.values() 
-                                                              if isinstance(result, dict)]
-                                
-                                fig_prices = go.Figure()
-                                fig_prices.add_trace(go.Bar(
-                                    x=models,
-                                    y=prices,
-                                    marker_color=['gray'] + ['blue'] * len(individual_predictions),
-                                    text=[f"${p:,.0f}" for p in prices],
-                                    textposition='auto'
-                                ))
-                                fig_prices.update_layout(
-                                    title='Price Comparison: Traditional vs ML Models',
-                                    yaxis_title='Price ($)',
-                                    height=400
-                                )
-                                st.plotly_chart(fig_prices, use_container_width=True)
-                                
-                            with col_viz2:
-                                # Error comparison chart
-                                errors = [0] + [result['error_pct'] for result in individual_predictions.values() 
-                                              if isinstance(result, dict)]
-                                
-                                fig_errors = go.Figure()
-                                fig_errors.add_trace(go.Bar(
-                                    x=models,
-                                    y=errors,
-                                    marker_color=['gray'] + ['red' if err > 0 else 'green' for err in errors[1:]],
-                                    text=[f"{err:.2f}%" for err in errors],
-                                    textposition='auto'
-                                ))
-                                fig_errors.update_layout(
-                                    title='Error Percentage by Model',
-                                    yaxis_title='Error (%)',
-                                    height=400
-                                )
-                                st.plotly_chart(fig_errors, use_container_width=True)
-                        
-                    except Exception as e:
-                        st.error(f"❌ ML pricing failed: {e}")
-                        import traceback
-                        with st.expander("🔍 Error Details"):
-                            st.code(traceback.format_exc())
-            else:
-                st.warning("⚠️ Please train ML models first using the section below!")
-    
-    # ... [rest of your existing show_classical_ml function continues here]
-    st.markdown("## 🏛️ Advanced Classical Machine Learning")
-    
-    # Training Configuration
-    st.markdown("### ⚙️ Training Configuration")
-    
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        n_samples = st.slider("Training Samples", 100, 10000, 2000, key="cl_samples")
-        st.info(f"📊 Will generate {n_samples} training samples")
+        col_rt1, col_rt2 = st.columns(2)
+        with col_rt1:
+            st.metric("Traditional Price", f"${traditional_price:,.0f}")
         
-    with col2:
-        cv_folds = st.slider("Cross-Validation Folds", 3, 10, 5, key="cl_cv")
-        st.info(f"🔄 {cv_folds}-fold cross-validation")
-        
-    with col3:
-        feature_engineering = st.checkbox("Enable Advanced Feature Engineering", value=True, key="cl_feat")
-        ensemble_learning = st.checkbox("Enable Ensemble Learning", value=True, key="cl_ensemble")
+        # ML Prediction with Confidence
+        if classical_ml and classical_ml.models:
+            features = [ml_forward_rate, ml_strike, ml_volatility, ml_expiry, ml_tenor, ml_notional]
+            ml_price, confidence = classical_ml.predict_with_confidence(features)
+            
+            with col_rt2:
+                error = ml_price - traditional_price
+                error_pct = (error / traditional_price) * 100
+                
+                st.metric(
+                    "ML Predicted Price", 
+                    f"${ml_price:,.0f}",
+                    delta=f"{error_pct:+.1f}%",
+                    delta_color="inverse" if abs(error_pct) > 5 else "normal",
+                    help=f"Confidence: {confidence:.1%}"
+                )
+            
+            # Advanced ML Analysis
+            if st.button("🔍 Deep ML Analysis", key="deep_ml_analysis"):
+                with st.spinner("Performing advanced ML analysis..."):
+                    perform_advanced_ml_analysis(
+                        classical_ml, quantum_ml, features, 
+                        traditional_price, ml_price, pricer
+                    )
+        else:
+            st.warning("⚠️ Train ML models first for advanced pricing!")
     
-    # Training Execution
-    st.markdown("### 🚀 Model Training")
-
-    # Add circuit diagram option for quantum models
-    show_training_diagrams = st.checkbox("Show Circuit Diagrams During Training", value=True, key="cl_show_diagrams")
-
-    if st.button("🎯 Train Advanced ML Models", type="primary", key="cl_train"):
-        with st.spinner("Training advanced ML models with feature engineering..."):
+    # Enhanced Training Section
+    st.markdown("### ⚙️ Advanced Training Configuration")
+    
+    col_config1, col_config2, col_config3 = st.columns(3)
+    
+    with col_config1:
+        n_samples = st.slider("Training Samples", 100, 20000, 5000, 100, key="cl_samples")
+        cv_folds = st.slider("CV Folds", 3, 10, 5, key="cl_cv")
+        
+    with col_config2:
+        feature_engineering = st.selectbox(
+            "Feature Engineering", 
+            ["Basic", "Advanced", "Quantum-Inspired"],
+            index=1,
+            key="cl_feat_level"
+        )
+        ensemble_method = st.selectbox(
+            "Ensemble Method",
+            ["Voting", "Stacking", "Weighted Average"],
+            index=0,
+            key="cl_ensemble"
+        )
+        
+    with col_config3:
+        hyperparameter_tuning = st.checkbox("Auto Hyperparameter Tuning", value=True, key="cl_hp_tune")
+        generate_quantum_circuits = st.checkbox("Generate Quantum Circuits", value=True, key="cl_quantum_circ")
+    
+    # Training Execution with Enhanced Features
+    if st.button("🎯 Train Advanced ML Models", type="primary", key="cl_train_advanced"):
+        with st.spinner("Training advanced ML models with enhanced features..."):
             try:
-                # Generate training data
-                data_df = generate_advanced_training_data(n_samples, pricer)
-
-                # Display dataset info
-                st.success(f"✅ Generated {len(data_df)} training samples")
-                st.write(f"📊 Dataset shape: {data_df.shape}")
-
-                # Show sample of the data
-                with st.expander("📋 View Training Data Sample"):
-                    st.dataframe(data_df.head(10), use_container_width=True)
-
-                # Separate features and target
+                # Generate comprehensive training data
+                data_df = generate_enhanced_training_data(n_samples, pricer, feature_engineering)
+                
+                # Feature engineering based on selection
                 feature_columns = [col for col in data_df.columns if col != 'price']
                 X = data_df[feature_columns]
                 y = data_df['price']
-
-                # Feature engineering
-                if feature_engineering:
-                    X_engineered = classical_ml.engineer_features(X)
-                    st.success(f"🔧 Engineered {X_engineered.shape[1]} features")
-
-                    # Show engineered features info
-                    col_feat1, col_feat2 = st.columns(2)
-                    with col_feat1:
-                        st.write("**Original Features:**", list(X.columns))
-                    with col_feat2:
-                        st.write("**Engineered Features:**", list(X_engineered.columns))
+                
+                if feature_engineering == "Advanced":
+                    X_engineered = classical_ml.engineer_advanced_features(X)
+                elif feature_engineering == "Quantum-Inspired":
+                    X_engineered = classical_ml.engineer_quantum_inspired_features(X)
                 else:
                     X_engineered = X
-                    st.info("ℹ️ Using basic features only")
-
-                # Store engineered features for later use
+                
+                # Store for later use
                 st.session_state.X_engineered = X_engineered
                 st.session_state.feature_names = X_engineered.columns.tolist()
-                st.session_state.y_actual = y.values  # Store actual values for plotting
-
-                # Train models
-                results = classical_ml.train_models_with_cv(X_engineered, y, cv_folds)
-
-                # Store actual values in results for plotting
-                for name in results:
-                    results[name]['actual'] = y.values
-
+                st.session_state.y_actual = y.values
+                
+                # Train models with enhanced configuration
+                results = classical_ml.train_enhanced_models(
+                    X_engineered, y, cv_folds, 
+                    hyperparameter_tuning, ensemble_method
+                )
+                
+                # Generate quantum circuits if requested
+                if generate_quantum_circuits and quantum_ml:
+                    generate_ml_quantum_circuits(classical_ml, quantum_ml, X_engineered, y)
+                
                 st.session_state.advanced_classical_results = results
-
-                # Display training summary
-                st.success(f"✅ Successfully trained {len(results)} models!")
-
-                # Show quick performance summary
-                st.markdown("### 📈 Training Summary")
-                best_model = min(results.items(), key=lambda x: x[1]['cv_mae'])
-                st.success(f"🎯 **Best Model**: {best_model[0]} (CV MAE: ${best_model[1]['cv_mae']:.2f})")
-
-                # Generate circuit diagrams for quantum models if requested
-                if show_training_diagrams and HAS_QISKIT and quantum_ml is not None:
-                    st.markdown("### ⚛️ Quantum Circuit Diagrams")
-                    st.info("Generating circuit diagrams for quantum models...")
-
-                    # Create sample features for diagram generation
-                    sample_features = X_engineered.iloc[0].values.tolist() if len(X_engineered) > 0 else [0.04, 0.035, 0.20, 2.0, 5.0, 10000000]
-
-                    quantum_circuit_types = ["feature_map_advanced", "variational_advanced", "quantum_neural_network"]
-
-                    for circuit_type in quantum_circuit_types:
-                        try:
-                            st.markdown(f"#### {circuit_type.replace('_', ' ').title()}")
-                            expectation, circuit, counts = quantum_ml.run_advanced_circuit(
-                                circuit_type,
-                                features=sample_features,
-                                show_diagram=True
-                            )
-                            st.markdown(f"**Expectation Value:** {expectation:.4f}")
-                        except Exception as diagram_error:
-                            st.warning(f"Could not generate diagram for {circuit_type}: {diagram_error}")
-
+                st.success(f"✅ Successfully trained {len(results)} models with {feature_engineering} features!")
+                
             except Exception as e:
                 st.error(f"❌ Training failed: {e}")
-                import traceback
-                with st.expander("🔍 Detailed Error Traceback"):
-                    st.code(traceback.format_exc())
-    
-    # Display Detailed Results
+
+    # Display results if available
     if 'advanced_classical_results' in st.session_state:
-        results = st.session_state.advanced_classical_results
-        
-        st.markdown("---")
-        st.markdown("## 📊 Detailed Model Performance")
-        
-        # Performance Metrics Table
-        st.markdown("### 📋 Performance Comparison")
-        
-        metrics_data = []
-        for name, result in results.items():
-            metrics_data.append({
-                'Model': name,
-                'CV MAE': f"${result['cv_mae']:,.2f}",
-                'Training MAE': f"${result['mae']:,.2f}",
-                'RMSE': f"${result['rmse']:,.2f}",
-                'R² Score': f"{result['r2']:.4f}",
-                'Improvement vs Avg': f"{((np.mean([r['cv_mae'] for r in results.values()]) - result['cv_mae']) / np.mean([r['cv_mae'] for r in results.values()]) * 100):.1f}%"
-            })
-        
-        df_metrics = pd.DataFrame(metrics_data)
-        st.dataframe(df_metrics, use_container_width=True)
-        
-        # Performance Visualization
-        col_perf1, col_perf2 = st.columns(2)
-        
-        with col_perf1:
-            # CV MAE Comparison
-            models = list(results.keys())
-            cv_mae_values = [results[name]['cv_mae'] for name in models]
-            
-            fig_mae = go.Figure(data=[
-                go.Bar(name='CV MAE', x=models, y=cv_mae_values,
-                      marker_color=['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd'])
-            ])
-            fig_mae.update_layout(
-                title='Cross-Validation MAE by Model',
-                yaxis_title='MAE ($)',
-                height=400,
-                showlegend=False
-            )
-            st.plotly_chart(fig_mae, use_container_width=True)
-        
-        with col_perf2:
-            # R² Score Comparison
-            r2_values = [results[name]['r2'] for name in models]
-            
-            fig_r2 = go.Figure(data=[
-                go.Bar(name='R² Score', x=models, y=r2_values,
-                      marker_color=['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd'])
-            ])
-            fig_r2.update_layout(
-                title='R² Score by Model',
-                yaxis_title='R² Score',
-                height=400,
-                showlegend=False
-            )
-            st.plotly_chart(fig_r2, use_container_width=True)
-        
-        # Feature Importance Analysis
-        st.markdown("### 🔍 Feature Importance Analysis")
-        
-        if classical_ml.feature_importance and hasattr(classical_ml, 'feature_names'):
-            feature_names = classical_ml.feature_names
-            
-            # Create tabs for different model feature importances
-            tab1, tab2, tab3 = st.tabs(["Random Forest", "Gradient Boosting", "XGBoost"])
-            
-            with tab1:
-                if 'Random Forest' in classical_ml.feature_importance:
-                    importance = classical_ml.feature_importance['Random Forest']
-                    display_feature_importance("Random Forest", feature_names, importance)
-            
-            with tab2:
-                if 'Gradient Boosting' in classical_ml.feature_importance:
-                    importance = classical_ml.feature_importance['Gradient Boosting']
-                    display_feature_importance("Gradient Boosting", feature_names, importance)
-            
-            with tab3:
-                if 'XGBoost' in classical_ml.feature_importance:
-                    importance = classical_ml.feature_importance['XGBoost']
-                    display_feature_importance("XGBoost", feature_names, importance)
-        
-        # Model Predictions Analysis
-        st.markdown("### 📈 Prediction Analysis")
-        
-        # Show actual vs predicted for best model
-        best_model_name = min(results.items(), key=lambda x: x[1]['cv_mae'])[0]
-        best_result = results[best_model_name]
-        
-        if 'predictions' in best_result and 'actual' in best_result:
-            col_pred1, col_pred2 = st.columns(2)
-            
-            with col_pred1:
-                # Actual vs Predicted scatter plot - FIXED: Convert range to list
-                actual_values = best_result['actual']
-                predicted_values = best_result['predictions']
-                
-                fig_scatter = go.Figure()
-                fig_scatter.add_trace(go.Scatter(
-                    x=actual_values,  # Use actual values directly (numpy array)
-                    y=predicted_values,
-                    mode='markers',
-                    name='Predicted',
-                    marker=dict(color='blue', opacity=0.6)
-                ))
-                # Add perfect prediction line
-                max_val = max(np.max(predicted_values), np.max(actual_values))
-                min_val = min(np.min(predicted_values), np.min(actual_values))
-                fig_scatter.add_trace(go.Scatter(
-                    x=[min_val, max_val], 
-                    y=[min_val, max_val],
-                    mode='lines',
-                    name='Perfect Prediction',
-                    line=dict(color='red', dash='dash')
-                ))
-                fig_scatter.update_layout(
-                    title=f'{best_model_name} - Actual vs Predicted',
-                    xaxis_title='Actual Values ($)',
-                    yaxis_title='Predicted Values ($)',
-                    height=400
-                )
-                st.plotly_chart(fig_scatter, use_container_width=True)
-            
-            with col_pred2:
-                # Residuals plot
-                residuals = actual_values - predicted_values
-                fig_residuals = go.Figure()
-                fig_residuals.add_trace(go.Scatter(
-                    x=predicted_values,
-                    y=residuals,
-                    mode='markers',
-                    name='Residuals',
-                    marker=dict(color='green', opacity=0.6)
-                ))
-                fig_residuals.add_hline(y=0, line_dash="dash", line_color="red")
-                fig_residuals.update_layout(
-                    title=f'{best_model_name} - Residuals Plot',
-                    xaxis_title='Predicted Values ($)',
-                    yaxis_title='Residuals ($)',
-                    height=400
-                )
-                st.plotly_chart(fig_residuals, use_container_width=True)
-                
-                # Residuals statistics
-                st.metric("Mean Residual", f"${np.mean(residuals):.2f}")
-                st.metric("Residual Std Dev", f"${np.std(residuals):.2f}")
-def show_traditional_swaption_pricing(pricer, classical_ml):
-    """Traditional swaption pricing display - FIXED VERSION"""
-    
-    st.markdown("## 🏛️ Traditional Swaption Pricing")
-    
-    # Pricing Configuration
-    st.markdown("### ⚙️ Pricing Parameters")
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.markdown("#### 📝 Trade Details")
-        expiry = st.slider("Expiry (Years)", 0.25, 10.0, 2.0, 0.25, key="trad_expiry")
-        tenor = st.slider("Tenor (Years)", 1.0, 30.0, 5.0, 0.5, key="trad_tenor")
-        strike = st.slider("Strike Rate", 0.005, 0.10, 0.035, 0.001, key="trad_strike")
-        notional = st.selectbox("Notional Amount", [1e6, 5e6, 10e6, 25e6, 50e6], 
-                               format_func=lambda x: f"${x/1e6:.0f}M", 
-                               index=2, key="trad_notional")
-    
-    with col2:
-        st.markdown("#### 📊 Market Conditions")
-        volatility = st.slider("Volatility", 0.10, 0.80, 0.25, 0.01, key="trad_vol")
-        risk_free_rate = st.slider("Risk-Free Rate", 0.001, 0.08, 0.025, 0.001, key="trad_rf")
-        option_type = st.selectbox("Option Type", ["Payer Swaption", "Receiver Swaption"], key="trad_type")
-        
-        st.markdown("#### 🤖 ML Settings")
-        use_ml = st.checkbox("Show ML Predictions", value=True, key="trad_use_ml")
-    
-    # Calculate key market metrics
-    forward_rate = pricer.calculate_forward_swap_rate(expiry, tenor)
-    moneyness = strike / forward_rate if forward_rate > 0 else 1.0
-    
-    # Display market metrics
-    st.markdown("### 📈 Market Metrics")
-    col_metrics1, col_metrics2, col_metrics3, col_metrics4 = st.columns(4)
-    
-    with col_metrics1:
-        st.metric("Forward Swap Rate", f"{forward_rate:.3%}")
-    with col_metrics2:
-        st.metric("Moneyness", f"{moneyness:.3f}")
-    with col_metrics3:
-        st.metric("Time Value", f"{expiry:.2f} years")
-    with col_metrics4:
-        st.metric("Volatility", f"{volatility:.1%}")
-    
-    # Pricing Execution
-    if st.button("💰 Calculate Swaption Price", type="primary", key="trad_calculate"):
-        with st.spinner("Calculating swaption prices..."):
-            try:
-                # 1. Calculate Traditional Black-76 Price
-                theoretical_price = pricer.black_76_swaption_price(
-                    notional, expiry, tenor, strike, option_type, volatility
-                )
-                
-                # 2. Calculate Monte Carlo Price
-                mc_price = pricer.monte_carlo_price(
-                    expiry=expiry,
-                    strike=strike,
-                    volatility=volatility,
-                    risk_free_rate=risk_free_rate,
-                    paths=10000,
-                    tenor=tenor
-                )
-                
-                # 3. Calculate ML Price if requested
-                ml_price = None
-                ml_details = {}
-                if use_ml and classical_ml.models:
-                    features = [forward_rate, strike, volatility, expiry, tenor, notional]
-                    ml_price = classical_ml.predict_ensemble(features)
-                    
-                    # Get individual model predictions
-                    individual_predictions = {}
-                    for model_name, model in classical_ml.models.items():
-                        try:
-                            pred = model.predict([features])[0]
-                            individual_predictions[model_name] = pred
-                        except Exception as e:
-                            individual_predictions[model_name] = f"Error: {e}"
-                    
-                    ml_details = {
-                        'individual_predictions': individual_predictions,
-                        'features_used': features,
-                        'ensemble_price': ml_price
-                    }
-                
-                # Store results
-                st.session_state.traditional_results = {
-                    'theoretical_price': theoretical_price,
-                    'monte_carlo_price': mc_price,
-                    'ml_price': ml_price,
-                    'ml_details': ml_details,
-                    'forward_rate': forward_rate,
-                    'moneyness': moneyness,
-                    'parameters': {
-                        'expiry': expiry,
-                        'tenor': tenor, 
-                        'strike': strike,
-                        'volatility': volatility,
-                        'notional': notional,
-                        'option_type': option_type,
-                        'risk_free_rate': risk_free_rate
-                    },
-                    'timestamp': datetime.now()
-                }
-                
-                st.success("✅ Pricing calculation completed!")
-                
-            except Exception as e:
-                st.error(f"❌ Pricing calculation failed: {e}")
-                import traceback
-                with st.expander("🔍 Error Details"):
-                    st.code(traceback.format_exc())
-    
-    # Display Results
-    if 'traditional_results' in st.session_state:
-        results = st.session_state.traditional_results
-        
-        st.markdown("---")
-        st.markdown("## 💰 Pricing Results")
-        
-        # Price Comparison
-        st.markdown("### 📊 Price Comparison")
-        
-        # Create columns based on what's available
-        price_columns = st.columns(2 if results['ml_price'] is None else 3)
-        
-        with price_columns[0]:
-            st.metric(
-                "Black-76 Theoretical", 
-                f"${results['theoretical_price']:,.2f}",
-                help="Traditional Black-76 model pricing"
-            )
-            
-        with price_columns[1]:
-            mc_error = results['monte_carlo_price'] - results['theoretical_price']
-            mc_error_pct = (mc_error / results['theoretical_price']) * 100
-            st.metric(
-                "Monte Carlo Simulation", 
-                f"${results['monte_carlo_price']:,.2f}",
-                delta=f"{mc_error_pct:+.2f}%",
-                help=f"10,000 path Monte Carlo simulation"
-            )
-        
-        if results['ml_price'] is not None and len(price_columns) > 2:
-            with price_columns[2]:
-                ml_error = results['ml_price'] - results['theoretical_price']
-                ml_error_pct = (ml_error / results['theoretical_price']) * 100
-                st.metric(
-                    "Machine Learning", 
-                    f"${results['ml_price']:,.2f}",
-                    delta=f"{ml_error_pct:+.2f}%",
-                    help="Ensemble ML model prediction"
-                )
-def display_feature_importance(model_name, feature_names, importance):
-    """Display feature importance for a specific model"""
-    # Ensure we have matching lengths
-    min_length = min(len(feature_names), len(importance))
-    feature_names = feature_names[:min_length]
-    importance = importance[:min_length]
-    
-    # Sort features by importance
-    indices = np.argsort(importance)[::-1]
-    
-    # Create horizontal bar chart
-    fig = go.Figure(data=[
-        go.Bar(y=[feature_names[i] for i in indices],
-              x=[importance[i] for i in indices],
-              orientation='h',
-              marker_color='lightseagreen')
-    ])
-    fig.update_layout(
-        title=f'{model_name} - Feature Importance',
-        xaxis_title='Importance',
-        height=400,
-        showlegend=False
-    )
-    st.plotly_chart(fig, use_container_width=True)
-    
-    # Show top 5 features
-    st.write(f"**Top 5 Features for {model_name}:**")
-    for i in range(min(5, len(indices))):
-        st.write(f"{i+1}. {feature_names[indices[i]]}: {importance[indices[i]]:.4f}")
+        display_enhanced_ml_results(st.session_state.advanced_classical_results, classical_ml)
 
-def show_quantum_ml(quantum_ml):
-    """Enhanced Quantum ML section with advanced circuit generation"""
+def perform_advanced_ml_analysis(classical_ml, quantum_ml, features, traditional_price, ml_price, pricer):
+    """Perform comprehensive ML analysis with quantum integration"""
     
-    st.markdown("## ⚛️ Advanced Quantum Machine Learning")
+    st.markdown("#### 🔬 Advanced ML Analysis")
     
-    # Circuit Configuration
-    st.markdown("### 🎛️ Quantum Circuit Configuration")
+    # Feature Importance Analysis
+    col_ana1, col_ana2 = st.columns(2)
     
-    col1, col2 = st.columns(2)
+    with col_ana1:
+        st.markdown("##### 📊 Feature Impact Analysis")
+        feature_impact = classical_ml.analyze_feature_impact(features)
+        
+        fig_impact = go.Figure(data=[
+            go.Bar(x=list(feature_impact.keys()), 
+                  y=list(feature_impact.values()),
+                  marker_color='lightcoral')
+        ])
+        fig_impact.update_layout(
+            title="Feature Impact on Prediction",
+            height=400
+        )
+        st.plotly_chart(fig_impact, use_container_width=True)
     
-    with col1:
-        st.markdown("#### 🔧 Circuit Parameters")
-        circuit_type = st.selectbox(
-            "Circuit Architecture",
-            [
-                "feature_map_advanced", 
-                "variational_advanced", 
-                "quantum_neural_network", 
-                "amplitude_estimation",
-                "quantum_approximate_optimization",
-                "efficient_su2"
-            ],
-            format_func=lambda x: x.replace("_", " ").title(),
-            key="qc_type"
+    with col_ana2:
+        st.markdown("##### 🎯 Prediction Confidence")
+        confidence_metrics = classical_ml.get_prediction_confidence(features)
+        
+        # Confidence gauge
+        fig_gauge = go.Figure(go.Indicator(
+            mode="gauge+number+delta",
+            value=confidence_metrics['confidence'] * 100,
+            domain={'x': [0, 1], 'y': [0, 1]},
+            title={'text': "Prediction Confidence"},
+            gauge={'axis': {'range': [None, 100]},
+                  'bar': {'color': "darkblue"},
+                  'steps': [{'range': [0, 50], 'color': "lightgray"},
+                           {'range': [50, 80], 'color': "gray"},
+                           {'range': [80, 100], 'color': "darkgray"}]}
+        ))
+        fig_gauge.update_layout(height=300)
+        st.plotly_chart(fig_gauge, use_container_width=True)
+    
+    # Quantum Circuit Generation based on ML model
+    if quantum_ml and HAS_QISKIT:
+        st.markdown("#### ⚛️ ML-Driven Quantum Circuit Generation")
+        
+        # Generate circuits based on ML model characteristics
+        quantum_circuits = generate_ml_based_quantum_circuits(
+            classical_ml, quantum_ml, features, ml_price
         )
         
-        n_qubits = st.slider("Number of Qubits", 4, 12, 6, key="qc_qubits")
-        quantum_ml.circuit_generator.n_qubits = n_qubits
+        # Display generated circuits
+        col_qc1, col_qc2 = st.columns(2)
         
-        # Circuit-specific parameters
-        if circuit_type in ["variational_advanced", "quantum_neural_network"]:
-            n_layers = st.slider("Number of Layers", 1, 5, 2, key="qc_layers")
-        else:
-            n_layers = 2
+        with col_qc1:
+            st.markdown("##### 🔧 Feature Encoding Circuit")
+            if 'feature_encoding' in quantum_circuits:
+                expectation, circuit, counts = quantum_circuits['feature_encoding']
+                st.markdown(f"**Expectation:** {expectation:.4f}")
+                st.text("Feature Encoding Circuit Structure")
+                # Display circuit diagram if available
         
-    with col2:
-        st.markdown("#### ⚡ Execution Parameters")
-        shots = st.slider("Measurement Shots", 256, 4096, 1024, key="qc_shots")
-        optimization_level = st.slider("Optimization Level", 0, 3, 1, key="qc_opt")
-        
-        # Feature inputs for financial context
-        st.markdown("#### 📊 Financial Features")
-        forward_rate = st.number_input("Forward Rate", 0.01, 0.10, 0.04, 0.001, key="qc_fwd")
-        strike_rate = st.number_input("Strike Rate", 0.01, 0.10, 0.035, 0.001, key="qc_strike")
-        volatility = st.number_input("Volatility", 0.05, 1.0, 0.20, 0.01, key="qc_vol")
-        expiry = st.number_input("Expiry (Years)", 0.25, 10.0, 2.0, 0.25, key="qc_expiry")
-        
-        features = [forward_rate, strike_rate, volatility, expiry, 5.0, 10.0]  # tenor and notional
-        
-    # Advanced Circuit Options
-    st.markdown("### 🔬 Advanced Circuit Options")
+        with col_qc2:
+            st.markdown("##### 🎯 Price Prediction Circuit")
+            if 'price_prediction' in quantum_circuits:
+                expectation, circuit, counts = quantum_circuits['price_prediction']
+                st.markdown(f"**Expectation:** {expectation:.4f}")
+                st.text("Price Prediction Circuit Structure")
+
+def generate_ml_based_quantum_circuits(classical_ml, quantum_ml, features, ml_price):
+    """Generate quantum circuits based on ML model characteristics and predictions"""
     
-    col_adv1, col_adv2, col_adv3 = st.columns(3)
+    circuits = {}
     
-    with col_adv1:
-        entanglement_type = st.selectbox(
-            "Entanglement Type",
-            ["linear", "circular", "full", "pairwise"],
-            key="qc_entangle"
+    try:
+        # Circuit 1: Feature Encoding based on ML feature importance
+        feature_importance = classical_ml.get_feature_importance()
+        
+        # Use feature importance to weight quantum feature encoding
+        weighted_features = [f * imp for f, imp in zip(features[:4], feature_importance[:4])]
+        
+        circuits['feature_encoding'] = quantum_ml.run_advanced_circuit(
+            "feature_map_advanced",
+            features=weighted_features,
+            show_diagram=True
         )
+        
+        # Circuit 2: Price Prediction Encoding
+        # Normalize price for quantum representation
+        price_normalized = ml_price / 1e6  # Scale for quantum representation
+        price_features = features + [price_normalized]
+        
+        circuits['price_prediction'] = quantum_ml.run_advanced_circuit(
+            "quantum_neural_network",
+            features=price_features,
+            show_diagram=True
+        )
+        
+        # Circuit 3: Error Estimation
+        traditional_price = pricer.black_76_swaption_price(
+            features[5], features[3], features[4], features[1], "Payer Swaption", features[2]
+        )
+        price_error = abs(ml_price - traditional_price) / traditional_price
+        
+        error_features = features + [price_error]
+        circuits['error_estimation'] = quantum_ml.run_advanced_circuit(
+            "variational_advanced",
+            features=error_features,
+            show_diagram=True
+        )
+        
+    except Exception as e:
+        st.warning(f"Quantum circuit generation partially failed: {e}")
     
-    with col_adv2:
-        error_mitigation = st.checkbox("Enable Error Mitigation", value=False, key="qc_error")
+    return circuits
+
+def generate_ml_quantum_circuits(classical_ml, quantum_ml, X_engineered, y):
+    """Generate quantum circuits based on trained ML model characteristics"""
     
-    with col_adv3:
-        custom_parameters = st.checkbox("Use Custom Parameters", value=False, key="qc_custom")
-        if custom_parameters:
-            param_string = st.text_input("Parameters (comma-separated)", "0.1,0.2,0.3,0.4", key="qc_params")
+    st.markdown("#### ⚛️ Generating ML-Informed Quantum Circuits")
+    
+    progress_bar = st.progress(0)
+    status_text = st.empty()
+    
+    try:
+        # 1. Circuit based on feature relationships
+        status_text.text("Generating feature relationship circuit...")
+        sample_features = X_engineered.iloc[0].values.tolist() if len(X_engineered) > 0 else [0.04] * 6
+        
+        # Use ML model insights to inform quantum circuit parameters
+        feature_importance = classical_ml.get_feature_importance()
+        
+        # Generate circuits with ML-informed parameters
+        circuit_types = ["feature_map_advanced", "variational_advanced", "quantum_neural_network"]
+        
+        for i, circuit_type in enumerate(circuit_types):
+            progress = (i + 1) / len(circuit_types)
+            progress_bar.progress(progress)
+            status_text.text(f"Generating {circuit_type} circuit...")
+            
             try:
-                params = [float(x.strip()) for x in param_string.split(",")]
-            except ValueError:
-                st.error("Invalid parameters. Please enter comma-separated numbers.")
-                params = None
-        else:
-            params = None
-    
-    # Circuit Execution
-    st.markdown("### 🚀 Circuit Execution")
-
-    # Add diagram generation option
-    show_diagram = st.checkbox("Generate Circuit Diagram", value=True, key="qc_show_diagram")
-
-    if st.button("🌀 Execute Advanced Quantum Circuit", type="primary", key="qc_execute"):
-        with st.spinner("Executing advanced quantum circuit..."):
-            try:
-                # Configure backend
-                quantum_ml.configure_backend(
-                    optimization_level=optimization_level,
-                    error_mitigation=error_mitigation,
-                    shots=shots
-                )
-
-                # Execute circuit with diagram option
+                # Modify features based on ML feature importance
+                weighted_features = [
+                    feat * imp for feat, imp in zip(sample_features, feature_importance[:len(sample_features)])
+                ]
+                
                 expectation, circuit, counts = quantum_ml.run_advanced_circuit(
                     circuit_type,
-                    features=features,
-                    params=params,
-                    custom_circuit=None,
-                    show_diagram=show_diagram
+                    features=weighted_features,
+                    show_diagram=True
                 )
-
-                # Store results
-                st.session_state.advanced_quantum_result = {
+                
+                # Store circuit information
+                if 'ml_quantum_circuits' not in st.session_state:
+                    st.session_state.ml_quantum_circuits = {}
+                
+                st.session_state.ml_quantum_circuits[circuit_type] = {
                     'expectation': expectation,
                     'circuit': circuit,
                     'counts': counts,
-                    'type': circuit_type,
-                    'performance': quantum_ml.circuit_performance.get(circuit_type, {}),
-                    'features': features,
-                    'timestamp': datetime.now()
+                    'features_used': weighted_features,
+                    'feature_importance': feature_importance
                 }
+                
+            except Exception as circuit_error:
+                st.warning(f"Failed to generate {circuit_type}: {circuit_error}")
+        
+        status_text.text("✅ ML quantum circuits generated successfully!")
+        progress_bar.progress(1.0)
+        
+    except Exception as e:
+        st.error(f"Quantum circuit generation failed: {e}")
+    finally:
+        progress_bar.empty()
+        status_text.empty()
 
-                st.success(f"✅ Advanced circuit executed! Expectation: {expectation:.4f}")
-
-            except Exception as e:
-                st.error(f"❌ Quantum computation failed: {e}")
-                import traceback
-                with st.expander("🔍 Detailed Error Traceback"):
-                    st.code(traceback.format_exc())
+def display_enhanced_ml_results(results, classical_ml):
+    """Display enhanced ML results with interactive components"""
     
-    # Display Advanced Results
-    if 'advanced_quantum_result' in st.session_state:
-        result = st.session_state.advanced_quantum_result
+    st.markdown("## 📊 Enhanced Model Performance Analysis")
+    
+    # Performance Summary with Interactive Charts
+    col_sum1, col_sum2, col_sum3 = st.columns(3)
+    
+    with col_sum1:
+        best_model = min(results.items(), key=lambda x: x[1]['cv_mae'])
+        st.metric("🎯 Best Model", best_model[0])
+    
+    with col_sum2:
+        st.metric("📈 Best CV MAE", f"${best_model[1]['cv_mae']:,.2f}")
+    
+    with col_sum3:
+        avg_mae = np.mean([r['cv_mae'] for r in results.values()])
+        improvement = ((avg_mae - best_model[1]['cv_mae']) / avg_mae) * 100
+        st.metric("💪 Improvement vs Avg", f"{improvement:.1f}%")
+    
+    # Interactive Model Comparison
+    st.markdown("### 📈 Interactive Model Comparison")
+    
+    comparison_metric = st.selectbox(
+        "Select Metric for Comparison",
+        ["CV MAE", "Training MAE", "RMSE", "R² Score"],
+        key="comp_metric"
+    )
+    
+    # Create interactive comparison chart
+    metric_key = {'CV MAE': 'cv_mae', 'Training MAE': 'mae', 
+                 'RMSE': 'rmse', 'R² Score': 'r2'}[comparison_metric]
+    
+    models = list(results.keys())
+    metric_values = [results[name][metric_key] for name in models]
+    
+    fig_comparison = go.Figure(data=[
+        go.Bar(x=models, y=metric_values,
+              marker_color=['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd'],
+              text=[f"{v:,.2f}" if metric_key != 'r2' else f"{v:.4f}" for v in metric_values],
+              textposition='auto')
+    ])
+    
+    yaxis_title = '$' if metric_key != 'r2' else 'Score'
+    fig_comparison.update_layout(
+        title=f'Model Comparison - {comparison_metric}',
+        yaxis_title=yaxis_title,
+        height=400
+    )
+    st.plotly_chart(fig_comparison, use_container_width=True)
+    
+    # Feature Importance Dashboard
+    st.markdown("### 🔍 Feature Importance Dashboard")
+    
+    if hasattr(classical_ml, 'feature_importance') and classical_ml.feature_importance:
+        importance_model = st.selectbox(
+            "Select Model for Feature Analysis",
+            list(classical_ml.feature_importance.keys()),
+            key="imp_model"
+        )
         
-        st.markdown("---")
-        st.markdown("## 📊 Quantum Circuit Results")
+        if importance_model in classical_ml.feature_importance:
+            display_interactive_feature_importance(
+                importance_model,
+                classical_ml.feature_names,
+                classical_ml.feature_importance[importance_model]
+            )
+
+def display_interactive_feature_importance(model_name, feature_names, importance):
+    """Display interactive feature importance analysis"""
+    
+    col_f1, col_f2 = st.columns([2, 1])
+    
+    with col_f1:
+        # Interactive feature importance chart
+        indices = np.argsort(importance)[::-1]
+        sorted_features = [feature_names[i] for i in indices]
+        sorted_importance = [importance[i] for i in indices]
         
-        # Results Overview
-        col_res1, col_res2, col_res3, col_res4 = st.columns(4)
-        
-        with col_res1:
-            st.metric("Expectation Value", f"{result['expectation']:.4f}")
-        
-        with col_res2:
-            perf = result.get('performance', {})
-            st.metric("Execution Time", f"{perf.get('execution_time', 0):.3f}s")
-        
-        with col_res3:
-            st.metric("Circuit Depth", perf.get('depth', 0))
-        
-        with col_res4:
-            st.metric("Qubits Used", perf.get('qubits', 0))
-        
-        # Detailed Analysis
-        col_analysis1, col_analysis2 = st.columns(2)
-        
-        with col_analysis1:
-            st.markdown("#### 📈 Measurement Distribution")
-            if result['counts']:
-                # Get top states
-                top_states = dict(sorted(result['counts'].items(), 
-                                       key=lambda x: x[1], reverse=True)[:10])
-                
-                fig_counts = go.Figure(data=[
-                    go.Bar(x=list(top_states.keys()), 
-                          y=list(top_states.values()),
-                          marker_color='coral')
-                ])
-                fig_counts.update_layout(
-                    title="Top Quantum State Measurements",
-                    xaxis_title="Quantum State",
-                    yaxis_title="Count",
-                    height=400
+        fig = go.Figure(data=[
+            go.Bar(y=sorted_features, x=sorted_importance,
+                  orientation='h',
+                  marker_color='lightseagreen',
+                  hovertemplate='<b>%{y}</b><br>Importance: %{x:.4f}<extra></extra>')
+        ])
+        fig.update_layout(
+            title=f'{model_name} - Feature Importance',
+            xaxis_title='Importance',
+            height=500,
+            showlegend=False
+        )
+        st.plotly_chart(fig, use_container_width=True)
+    
+    with col_f2:
+        st.markdown("##### Top Features")
+        for i in range(min(5, len(indices))):
+            with st.container():
+                st.metric(
+                    label=f"{i+1}. {feature_names[indices[i]]}",
+                    value=f"{importance[indices[i]]:.4f}"
                 )
-                st.plotly_chart(fig_counts, use_container_width=True)
-            
-            # Circuit Information
-            st.markdown("#### 🔧 Circuit Information")
-            if result['circuit']:
-                circuit_info = quantum_ml.circuit_generator.get_circuit_info(result['circuit'])
-                info_data = {
-                    'Metric': ['Qubits', 'Depth', 'Total Gates', 'Parameters'],
-                    'Value': [
-                        circuit_info['qubits'],
-                        circuit_info['depth'],
-                        circuit_info['total_gates'],
-                        circuit_info['parameters']
-                    ]
-                }
-                st.dataframe(pd.DataFrame(info_data), use_container_width=True)
-                
-                # Gate breakdown
-                if circuit_info['gate_breakdown']:
-                    st.write("**Gate Breakdown:**")
-                    for gate, count in circuit_info['gate_breakdown'].items():
-                        st.write(f"- {gate}: {count}")
         
-        with col_analysis2:
-            st.markdown("#### 🎯 Expectation Analysis")
-            
-            # Expectation breakdown
-            perf = result.get('performance', {})
-            exp_data = {
-                'Component': ['Z Expectation', 'Parity Expectation', 'Combined'],
-                'Value': [
-                    f"{perf.get('z_expectation', 0):.4f}",
-                    f"{perf.get('parity_expectation', 0):.4f}",
-                    f"{perf.get('expectation', 0):.4f}"
-                ]
-            }
-            st.dataframe(pd.DataFrame(exp_data), use_container_width=True)
-            
-            # Performance metrics
-            st.markdown("#### ⚡ Performance Metrics")
-            perf_metrics = {
-                'Metric': ['Shots', 'Optimization Level', 'Error Mitigation', 'Variance'],
-                'Value': [
-                    perf.get('shots', 0),
-                    perf.get('optimization_level', 0),
-                    'Enabled' if perf.get('error_mitigation', False) else 'Disabled',
-                    f"{perf.get('variance', 0):.6f}"
-                ]
-            }
-            # Convert to string to avoid Arrow serialization issues
-            perf_df = pd.DataFrame(perf_metrics)
-            perf_df['Value'] = perf_df['Value'].astype(str)
-            st.dataframe(perf_df, use_container_width=True)
-        
-        # Circuit Visualization (Text-based)
-        st.markdown("#### 🔍 Circuit Structure")
-        if result['circuit']:
+        # Feature statistics
+        st.markdown("##### Importance Statistics")
+        st.metric("Max Importance", f"{np.max(importance):.4f}")
+        st.metric("Mean Importance", f"{np.mean(importance):.4f}")
+        st.metric("Std Dev", f"{np.std(importance):.4f}")
+
+def generate_enhanced_training_data(n_samples, pricer, feature_engineering):
+    """Generate enhanced training data with advanced features"""
+    
+    # This would be your existing data generation logic enhanced with:
+    # - More realistic market scenarios
+    # - Correlation structures
+    # - Regime changes
+    # - Stress scenarios
+    
+    return generate_advanced_training_data(n_samples, pricer)  # Your existing function
+
+# Add these methods to your ClassicalML class
+class EnhancedClassicalML(ClassicalML):
+    def predict_with_confidence(self, features):
+        """Predict with confidence estimation"""
+        predictions = []
+        for model_name, model in self.models.items():
             try:
-                # Display circuit as text
-                circuit_text = str(result['circuit'])
-                with st.expander("📋 View Circuit Diagram"):
-                    st.text(circuit_text)
-                
-                # Circuit metrics visualization
-                st.markdown("#### 📊 Circuit Metrics")
-                metrics_data = {
-                    'Metric': ['Qubits', 'Depth', 'Total Gates'],
-                    'Value': [result['circuit'].num_qubits, 
-                             result['circuit'].depth(),
-                             sum(result['circuit'].count_ops().values())]
-                }
-                
-                fig_metrics = go.Figure(data=[
-                    go.Bar(x=metrics_data['Metric'], 
-                          y=metrics_data['Value'],
-                          marker_color=['#FF6B6B', '#4ECDC4', '#45B7D1'])
-                ])
-                fig_metrics.update_layout(
-                    title="Circuit Complexity Metrics",
-                    height=300
-                )
-                st.plotly_chart(fig_metrics, use_container_width=True)
-                
-            except Exception as e:
-                st.warning(f"Could not display circuit visualization: {e}")
+                pred = model.predict([features])[0]
+                predictions.append(pred)
+            except:
+                continue
         
-        # Historical Performance
-        if quantum_ml.quantum_results:
-            st.markdown("#### 📈 Historical Performance")
-            
-            # Get recent results
-            recent_results = quantum_ml.quantum_results[-10:]  # Last 10 executions
-            
-            # FIXED: Convert to lists for Plotly
-            exec_times = [r['execution_time'] for r in recent_results]
-            expectations = [r['expectation'] for r in recent_results]
-            indices = list(range(len(recent_results)))  # Convert range to list
-            
-            col_hist1, col_hist2 = st.columns(2)
-            
-            with col_hist1:
-                # Execution time trend
-                fig_time = go.Figure()
-                fig_time.add_trace(go.Scatter(
-                    x=indices,  # Use list instead of range
-                    y=exec_times,
-                    mode='lines+markers',
-                    name='Execution Time',
-                    line=dict(color='purple')
-                ))
-                fig_time.update_layout(
-                    title='Execution Time Trend',
-                    xaxis_title='Run Number',
-                    yaxis_title='Time (seconds)',
-                    height=300
-                )
-                st.plotly_chart(fig_time, use_container_width=True)
-            
-            with col_hist2:
-                # Expectation value trend
-                fig_exp = go.Figure()
-                fig_exp.add_trace(go.Scatter(
-                    x=indices,  # Use list instead of range
-                    y=expectations,
-                    mode='lines+markers',
-                    name='Expectation',
-                    line=dict(color='orange')
-                ))
-                fig_exp.update_layout(
-                    title='Expectation Value Trend',
-                    xaxis_title='Run Number',
-                    yaxis_title='Expectation',
-                    height=300
-                )
-                st.plotly_chart(fig_exp, use_container_width=True)
+        if predictions:
+            ensemble_pred = np.mean(predictions)
+            confidence = 1.0 - (np.std(predictions) / ensemble_pred if ensemble_pred != 0 else 0.1)
+            confidence = max(0.1, min(0.99, confidence))  # Clamp between 0.1 and 0.99
+            return ensemble_pred, confidence
+        else:
+            return 0, 0.1
+    
+    def engineer_quantum_inspired_features(self, X):
+        """Engineer quantum-inspired features"""
+        # Add features inspired by quantum computing concepts
+        # This is a placeholder for actual implementation
+        return self.engineer_features(X)  # Extend with quantum-inspired features
+    
+    def analyze_feature_impact(self, features):
+        """Analyze impact of each feature on prediction"""
+        base_prediction = self.predict_ensemble(features)
+        impacts = {}
+        
+        for i, feature_name in enumerate(self.feature_names[:len(features)]):
+            perturbed_features = features.copy()
+            # Perturb feature by 1%
+            perturbed_features[i] *= 1.01
+            perturbed_pred = self.predict_ensemble(perturbed_features)
+            impact = abs(perturbed_pred - base_prediction) / base_prediction if base_prediction != 0 else 0
+            impacts[feature_name] = impact
+        
+        return impacts
 def generate_advanced_training_data(n_samples, pricer):
     """Generate advanced training data with comprehensive feature engineering"""
     data = []
