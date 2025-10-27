@@ -55,28 +55,30 @@ except ImportError:
     logger.warning("Kaggle API not found. Please install with 'pip install kaggle'.")
 
 def setup_kaggle():
-    """Setup Kaggle API credentials with better error handling"""
+    """Setup Kaggle API credentials with better error handling and fallback"""
     if not KaggleApi:
         st.warning("Kaggle API package not installed. Use: pip install kaggle")
         return None
-    
+
     try:
         # Set KAGGLE_CONFIG_DIR to current directory
         os.environ['KAGGLE_CONFIG_DIR'] = os.path.abspath('.')
-        
+
         # Check if kaggle.json exists
         kaggle_json_path = os.path.join(os.path.abspath('.'), 'kaggle.json')
         if not os.path.exists(kaggle_json_path):
-            st.warning(f"kaggle.json not found at {kaggle_json_path}")
-            st.info("Please download kaggle.json from https://www.kaggle.com/settings and place it in the current directory")
+            st.warning("⚠️ kaggle.json not found. Using synthetic data for demonstration.")
+            st.info("To use real Kaggle data: Download kaggle.json from https://www.kaggle.com/settings and place it in the project root.")
             return None
-        
+
+        # Try to authenticate
         api = KaggleApi()
         api.authenticate()
         st.success("✅ Kaggle API authenticated successfully!")
         return api
     except Exception as e:
-        st.error(f"❌ Kaggle API authentication failed: {e}")
+        st.warning(f"⚠️ Kaggle API authentication failed: {e}")
+        st.info("Using synthetic data for demonstration. Real Kaggle data requires valid kaggle.json file.")
         return None
 
 # --- QUANTUM COMPUTING IMPORTS ---
@@ -2217,20 +2219,44 @@ def main():
     quantum_ml = st.session_state.quantum_ml
     analytics = st.session_state.analytics
     
-    # System Status with Kaggle
+    # System Status with Current Market Parameters
     col1, col2, col3, col4, col5 = st.columns(5)
     with col1:
         st.metric("Quantum", "✅" if HAS_QUANTUM else "❌")
     with col2:
         st.metric("Classical ML", "✅" if HAS_ML else "❌")
     with col3:
-        kaggle_status = "✅" if kaggle_manager.api else "❌"
+        kaggle_status = "✅" if kaggle_manager.api else "⚠️ Demo"
         st.metric("Kaggle API", kaggle_status)
     with col4:
         datasets_loaded = len(kaggle_manager.loaded_datasets)
         st.metric("Datasets", datasets_loaded)
     with col5:
-        st.metric("Market Data", "Live" if pricer.market_data.get('timestamp') else "Synthetic")
+        current_time = datetime.now().strftime("%H:%M:%S")
+        st.metric("Current Time", current_time)
+
+    # Current Market Parameters Display
+    st.markdown("### 📊 Current Market Parameters")
+    market_data = pricer.market_data
+
+    if market_data:
+        col_mkt1, col_mkt2, col_mkt3, col_mkt4 = st.columns(4)
+
+        with col_mkt1:
+            sofr_rate = market_data.get('SOFR', 0.0530)
+            st.metric("SOFR Rate", f"{sofr_rate:.3%}")
+
+        with col_mkt2:
+            ust_10y = market_data.get('UST_10Y', 0.0410)
+            st.metric("10Y Treasury", f"{ust_10y:.3%}")
+
+        with col_mkt3:
+            vix = market_data.get('VIX', 15.5)
+            st.metric("VIX Index", f"{vix:.1f}")
+
+        with col_mkt4:
+            swap_5y = market_data.get('SWAP_5Y', 0.0430)
+            st.metric("5Y Swap Rate", f"{swap_5y:.3%}")
     
     # Navigation Tabs
     tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
