@@ -2498,358 +2498,118 @@ def main():
         show_live_pricing(pricer, classical_ml, quantum_ml)
 
 def show_dashboard(pricer, classical_ml, quantum_ml, analytics):
-    """Enhanced Executive Dashboard with comprehensive analytics"""
+    """Main dashboard overview with enhanced classical ML results"""
     
-    # Dashboard Header with Status Indicators
-    st.markdown("""
-    <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                padding: 1.5rem; border-radius: 10px; margin-bottom: 2rem;'>
-        <h1 style='color: white; margin: 0; text-align: center;'>📊 Quantum Finance Dashboard</h1>
-        <p style='color: white; text-align: center; margin: 0.5rem 0 0 0; opacity: 0.9;'>
-            Real-time Swaption Analytics & Performance Monitoring
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown("## 📊 Executive Dashboard")
     
-    # REAL-TIME SYSTEM STATUS
-    st.markdown("### 🚀 System Status & Performance")
-    
-    col1, col2, col3, col4, col5, col6 = st.columns(6)
+    # Quick Stats
+    col1, col2, col3, col4, col5 = st.columns(5)
     
     with col1:
-        quantum_status = "✅ Active" if HAS_QUANTUM and quantum_ml else "❌ Offline"
-        st.metric("Quantum Engine", quantum_status, 
-                 help="Quantum computing capability status")
+        st.metric("Market Volatility", f"{pricer.market_data.get('VIX', 0):.1f}")
+    with col2:
+        st.metric("10Y Rate", f"{pricer.market_data.get('UST_10Y', 0):.3%}")
+    with col3:
+        st.metric("Classical Models", len(classical_ml.models))
+    with col4:
+        st.metric("Quantum Circuits", len(quantum_ml.quantum_results))
+    with col5:
+        # Show best classical model performance if available
+        if hasattr(classical_ml, 'training_history') and classical_ml.training_history:
+            best_model = min(classical_ml.training_history, key=lambda x: x['cv_mae'])
+            st.metric("Best CV MAE", f"${best_model['cv_mae']:.2f}")
+    
+    # Market Overview
+    st.markdown("### 📈 Market Overview")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        # Yield curve visualization
+        tenors = list(pricer.yield_curve.keys())
+        rates = [-np.log(df) / tenor if tenor > 0 else 0 for tenor, df in pricer.yield_curve.items()]
+        
+        fig1 = go.Figure()
+        fig1.add_trace(go.Scatter(x=tenors, y=rates, mode='lines+markers', 
+                                 line=dict(color='blue', width=3),
+                                 name='Yield Curve'))
+        fig1.update_layout(
+            title="Current Yield Curve", 
+            height=300,
+            xaxis_title="Tenor (Years)",
+            yaxis_title="Rate (%)",
+            showlegend=True
+        )
+        st.plotly_chart(fig1, use_container_width=True)
     
     with col2:
-        ml_status = "✅ Active" if HAS_ML and classical_ml.models else "🔧 Training"
-        st.metric("ML Engine", ml_status,
-                 help="Machine learning model status")
-    
-    with col3:
-        model_count = len(classical_ml.models) if classical_ml.models else 0
-        st.metric("Active Models", model_count,
-                 help="Number of trained ML models")
-    
-    with col4:
-        quantum_circuits = len(quantum_ml.quantum_results) if quantum_ml else 0
-        st.metric("Quantum Circuits", quantum_circuits,
-                 help="Number of quantum circuits executed")
-    
-    with col5:
-        current_time = datetime.now().strftime("%H:%M:%S")
-        st.metric("Last Update", current_time,
-                 help="Last dashboard refresh")
-    
-    with col6:
-        # Calculate system health score
-        health_score = calculate_system_health(classical_ml, quantum_ml, pricer)
-        health_color = "normal" if health_score > 80 else "off" if health_score > 60 else "inverse"
-        st.metric("System Health", f"{health_score}%", 
-                 delta_color=health_color,
-                 help="Overall system performance score")
-
-    # MARKET INTELLIGENCE SECTION
-    st.markdown("### 🌍 Market Intelligence")
-    
-    col_mkt1, col_mkt2, col_mkt3, col_mkt4, col_mkt5 = st.columns(5)
-    
-    with col_mkt1:
-        vix = pricer.market_data.get('VIX', 0)
-        vix_status = "High Vol" if vix > 20 else "Normal" if vix > 15 else "Low Vol"
-        st.metric("VIX Index", f"{vix:.1f}", vix_status,
-                 help="Market volatility indicator")
-    
-    with col_mkt2:
-        sofr = pricer.market_data.get('SOFR', 0) * 100
-        st.metric("SOFR Rate", f"{sofr:.3f}%",
-                 help="Secured Overnight Financing Rate")
-    
-    with col_mkt3:
-        ust_10y = pricer.market_data.get('UST_10Y', 0) * 100
-        st.metric("10Y Treasury", f"{ust_10y:.3f}%",
-                 help="10-Year US Treasury Yield")
-    
-    with col_mkt4:
-        swap_5y = pricer.market_data.get('SWAP_5Y', 0) * 100
-        st.metric("5Y Swap Rate", f"{swap_5y:.3f}%",
-                 help="5-Year Swap Rate")
-    
-    with col_mkt5:
-        libor = pricer.market_data.get('LIBOR_3M', 0) * 100
-        st.metric("3M LIBOR", f"{libor:.3f}%",
-                 help="3-Month LIBOR Rate")
-
-    # VISUAL ANALYTICS ROW
-    col_viz1, col_viz2 = st.columns(2)
-    
-    with col_viz1:
-        st.markdown("#### 📈 Yield Curve Analysis")
-        
-        # Enhanced yield curve with multiple scenarios
-        tenors = list(pricer.yield_curve.keys())
-        current_rates = [-np.log(df) / tenor if tenor > 0 else 0 for tenor, df in pricer.yield_curve.items()]
-        
-        # Create scenarios for comparison
-        bullish_rates = [rate * 1.1 for rate in current_rates]  # +10%
-        bearish_rates = [rate * 0.9 for rate in current_rates]  # -10%
-        
-        fig_yield = go.Figure()
-        
-        # Add multiple yield curve scenarios
-        fig_yield.add_trace(go.Scatter(
-            x=tenors, y=current_rates, mode='lines+markers',
-            name='Current Curve', line=dict(color='blue', width=4),
-            marker=dict(size=8)
-        ))
-        
-        fig_yield.add_trace(go.Scatter(
-            x=tenors, y=bullish_rates, mode='lines',
-            name='Bull Scenario (+10%)', line=dict(color='green', width=2, dash='dash'),
-            opacity=0.7
-        ))
-        
-        fig_yield.add_trace(go.Scatter(
-            x=tenors, y=bearish_rates, mode='lines',
-            name='Bear Scenario (-10%)', line=dict(color='red', width=2, dash='dash'),
-            opacity=0.7
-        ))
-        
-        fig_yield.update_layout(
-            title="Yield Curve with Market Scenarios",
-            xaxis_title="Tenor (Years)",
-            yaxis_title="Yield (%)",
-            height=400,
-            showlegend=True,
-            template="plotly_white"
-        )
-        st.plotly_chart(fig_yield, use_container_width=True)
-    
-    with col_viz2:
-        st.markdown("#### 🤖 ML Model Performance")
+        # Classical ML Performance Summary
+        st.markdown("### 🏛️ Classical ML Performance")
         
         if classical_ml.training_history:
-            # Create performance comparison chart
-            models = [m['model'] for m in classical_ml.training_history]
-            cv_scores = [m['cv_mae'] for m in classical_ml.training_history]
-            
-            # Sort by performance (best first)
-            sorted_data = sorted(zip(models, cv_scores), key=lambda x: x[1])
-            models_sorted, scores_sorted = zip(*sorted_data)
-            
-            fig_perf = go.Figure()
-            
-            fig_perf.add_trace(go.Bar(
-                y=list(models_sorted),
-                x=list(scores_sorted),
-                orientation='h',
-                marker_color=['#2ca02c' if i == 0 else '#1f77b4' for i in range(len(models_sorted))],
-                text=[f"${score:.2f}" for score in scores_sorted],
-                textposition='auto',
-            ))
-            
-            fig_perf.update_layout(
-                title="Model Performance (CV MAE - Lower is Better)",
-                xaxis_title="Cross-Validation MAE ($)",
-                height=400,
-                showlegend=False,
-                template="plotly_white"
-            )
-            st.plotly_chart(fig_perf, use_container_width=True)
-            
-            # Best model highlight
-            best_model = min(classical_ml.training_history, key=lambda x: x['cv_mae'])
-            st.success(f"🏆 **Best Performer**: {best_model['model']} (CV MAE: ${best_model['cv_mae']:.2f})")
-        else:
-            st.info("""
-            🤖 **No trained models yet!**
-            
-            Visit the **Classical ML** tab to:
-            - Generate training data
-            - Train machine learning models  
-            - Enable advanced pricing capabilities
-            """)
-
-    # PERFORMANCE ANALYTICS ROW
-    st.markdown("### 📊 Advanced Performance Analytics")
-    
-    col_perf1, col_perf2, col_perf3 = st.columns(3)
-    
-    with col_perf1:
-        st.markdown("#### 🎯 Model Statistics")
-        
-        if classical_ml.training_history:
-            avg_mae = np.mean([m['cv_mae'] for m in classical_ml.training_history])
-            best_mae = min([m['cv_mae'] for m in classical_ml.training_history])
-            worst_mae = max([m['cv_mae'] for m in classical_ml.training_history])
-            model_variety = len(set(m['model'] for m in classical_ml.training_history))
-            
-            stats_data = {
-                'Metric': ['Average CV MAE', 'Best CV MAE', 'Worst CV MAE', 'Model Types'],
-                'Value': [f"${avg_mae:.2f}", f"${best_mae:.2f}", f"${worst_mae:.2f}", f"{model_variety}"]
-            }
-            
-            st.dataframe(pd.DataFrame(stats_data), use_container_width=True)
-        else:
-            st.info("Train models to see performance statistics")
-
-    with col_perf2:
-        st.markdown("#### ⚡ Quantum Analytics")
-        
-        if quantum_ml and quantum_ml.quantum_results:
-            recent_results = quantum_ml.quantum_results[-5:]  # Last 5 executions
-            
-            quantum_data = []
-            for result in recent_results:
-                quantum_data.append({
-                    'Circuit': result['circuit_type'],
-                    'Expectation': f"{result['expectation']:.4f}",
-                    'Time (s)': f"{result['execution_time']:.3f}",
-                    'Qubits': result['circuit_metrics']['qubits']
+            # Create performance summary
+            perf_data = []
+            for model in classical_ml.training_history:
+                perf_data.append({
+                    'Model': model['model'],
+                    'CV MAE': f"${model['cv_mae']:.2f}",
+                    'Timestamp': model['timestamp'].strftime('%H:%M:%S')
                 })
             
-            st.dataframe(pd.DataFrame(quantum_data), use_container_width=True)
+            df_perf = pd.DataFrame(perf_data)
+            st.dataframe(df_perf, use_container_width=True)
             
-            # Quantum performance summary
-            if quantum_ml.circuit_performance:
-                total_executions = len(quantum_ml.quantum_results)
-                avg_execution_time = np.mean([r['execution_time'] for r in quantum_ml.quantum_results])
-                st.metric("Total Executions", total_executions)
-                st.metric("Avg Execution Time", f"{avg_execution_time:.3f}s")
+            # Show best model
+            best_model = min(classical_ml.training_history, key=lambda x: x['cv_mae'])
+            st.success(f"🎯 Best Model: {best_model['model']} (CV MAE: ${best_model['cv_mae']:.2f})")
         else:
-            st.info("""
-            ⚛️ **Quantum computing ready!**
-            
-            Visit the **Quantum ML** tab to:
-            - Execute quantum circuits
-            - Analyze quantum advantage
-            - Compare with classical methods
-            """)
-
-    with col_perf3:
-        st.markdown("#### 📈 Feature Intelligence")
-        
-        if hasattr(classical_ml, 'feature_importance') and classical_ml.feature_importance:
-            if 'Random Forest' in classical_ml.feature_importance:
-                importance = classical_ml.feature_importance['Random Forest']
-                feature_names = classical_ml.feature_names[:len(importance)] if hasattr(classical_ml, 'feature_names') else [f'Feature {i+1}' for i in range(len(importance))]
-                
-                # Create horizontal bar chart
-                fig_features = go.Figure()
-                fig_features.add_trace(go.Bar(
-                    y=feature_names,
-                    x=importance,
-                    orientation='h',
-                    marker_color='lightseagreen'
-                ))
-                fig_features.update_layout(
-                    title="Feature Importance (Random Forest)",
-                    xaxis_title="Importance Score",
-                    height=300,
-                    showlegend=False,
-                    template="plotly_white"
-                )
-                st.plotly_chart(fig_features, use_container_width=True)
-                
-                # Top 3 features
-                indices = np.argsort(importance)[::-1][:3]
-                st.write("**Top 3 Features:**")
-                for i, idx in enumerate(indices):
-                    st.write(f"{i+1}. {feature_names[idx]}: {importance[idx]:.4f}")
-        else:
-            st.info("Feature importance available after model training")
-
-    # QUICK ACTIONS & RECOMMENDATIONS
-    st.markdown("### 🚀 Quick Actions & Insights")
+            st.info("🤖 Train models in Classical ML tab to see performance metrics")
     
-    col_act1, col_act2, col_act3 = st.columns(3)
+    # Enhanced Performance Highlights
+    st.markdown("### 🎯 Advanced Performance Highlights")
     
-    with col_act1:
-        st.markdown("#### 💡 Trading Insights")
-        if pricer.market_data.get('VIX', 0) > 20:
-            st.warning("**High Volatility Alert** - Consider adjusting risk parameters")
-        else:
-            st.success("**Normal Market Conditions** - Standard pricing models applicable")
-            
-        if classical_ml.training_history:
-            st.info(f"**ML Ready** - {len(classical_ml.models)} models available for pricing")
-    
-    with col_act2:
-        st.markdown("#### ⚡ Performance Tips")
-        tips = [
-            "Use ensemble methods for more stable predictions",
-            "Quantum enhancement works best for complex derivatives",
-            "Monitor feature importance for model interpretability",
-            "Regular retraining improves model accuracy"
-        ]
-        
-        for i, tip in enumerate(tips):
-            st.write(f"• {tip}")
-    
-    with col_act3:
-        st.markdown("#### 📊 Next Steps")
-        
-        if not classical_ml.training_history:
-            st.button("🚀 Train First ML Models", 
-                     help="Start with Classical ML tab",
-                     use_container_width=True)
-        
-        if quantum_ml and not quantum_ml.quantum_results:
-            st.button("⚛️ Run Quantum Circuit", 
-                     help="Explore quantum capabilities",
-                     use_container_width=True)
-        
-        st.button("🎯 Live Pricing Analysis", 
-                 help="Test real-time pricing",
-                 use_container_width=True)
-
-    # REAL-TIME ALERTS
-    if analytics.comparison_data:
-        st.markdown("### 🔔 Performance Alerts")
-        
-        df_comparison = pd.DataFrame(analytics.comparison_data)
-        quantum_advantage = (df_comparison['classical_error'] - df_comparison['quantum_error']).mean()
-        
-        if quantum_advantage > 1000:  # $1000 advantage
-            st.success(f"🎉 **Quantum Advantage Detected**: Average ${quantum_advantage:,.0f} improvement over classical methods")
-        elif quantum_advantage > 0:
-            st.info(f"📊 **Moderate Quantum Benefit**: ${quantum_advantage:,.0f} average improvement")
-        else:
-            st.warning("⚡ **Classical Methods Performing Better** - Consider model optimization")
-
-def calculate_system_health(classical_ml, quantum_ml, pricer):
-    """Calculate overall system health score (0-100)"""
-    score = 0
-    max_score = 0
-    
-    # ML Models Health (40 points)
     if classical_ml.training_history:
-        avg_mae = np.mean([m['cv_mae'] for m in classical_ml.training_history])
-        # Lower MAE = better score (normalize to 0-40)
-        ml_score = max(0, 40 - (avg_mae / 1000))  # Assuming MAE in reasonable range
-        score += ml_score
-    max_score += 40
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            # Model count and average performance
+            avg_mae = np.mean([m['cv_mae'] for m in classical_ml.training_history])
+            st.metric("Avg CV MAE", f"${avg_mae:.2f}")
+        
+        with col2:
+            # Best model performance
+            best_mae = min([m['cv_mae'] for m in classical_ml.training_history])
+            st.metric("Best CV MAE", f"${best_mae:.2f}")
+        
+        with col3:
+            # Model variety
+            model_types = len(set(m['model'] for m in classical_ml.training_history))
+            st.metric("Model Types", model_types)
     
-    # Quantum Health (30 points)
-    if quantum_ml and quantum_ml.quantum_results:
-        # More quantum results = better score
-        quantum_score = min(30, len(quantum_ml.quantum_results) * 2)
-        score += quantum_score
-    max_score += 30
-    
-    # Market Data Health (20 points)
-    if pricer.market_data:
-        market_score = 20  # Basic market data available
-        score += market_score
-    max_score += 20
-    
-    # Feature Engineering Health (10 points)
+    # Feature Engineering Insights
     if hasattr(classical_ml, 'feature_importance') and classical_ml.feature_importance:
-        feature_score = 10
-        score += feature_score
-    max_score += 10
-    
-    return int((score / max_score) * 100) if max_score > 0 else 0
+        st.markdown("### 🔍 Top Feature Importance")
+        
+        # Get the most important features from Random Forest (if available)
+        if 'Random Forest' in classical_ml.feature_importance:
+            rf_importance = classical_ml.feature_importance['Random Forest']
+            if hasattr(classical_ml, 'feature_names') and classical_ml.feature_names:
+                feature_names = classical_ml.feature_names[:len(rf_importance)]
+                
+                # Create feature importance chart
+                fig = go.Figure(data=[
+                    go.Bar(x=feature_names, y=rf_importance,
+                          marker_color='lightblue')
+                ])
+                fig.update_layout(
+                    title="Random Forest Feature Importance",
+                    xaxis_title="Features",
+                    yaxis_title="Importance",
+                    height=400,
+                    showlegend=False
+                )
+                st.plotly_chart(fig, use_container_width=True)
+
 def show_classical_ml(classical_ml, pricer, quantum_ml):
     """Enhanced Classical ML section with detailed results"""
     # """Enhanced Classical ML section with dedicated ML pricing"""
