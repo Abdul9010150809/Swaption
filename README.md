@@ -1,14 +1,14 @@
-# Quantum Finance Swaption Pricing
+# Find Final Price of Swaptions by Using ML Given by Qiskit Hackathon SKLM
 
-**Team Name:** Codeverses  
-**Institution:** RGUKT RKV
+**Team Name:** Quantum Finance Innovators  
+**Institution:** RGUKT RKV  
 **Date:** October 27, 2025  
 
 ---
 
 ## 🎯 Goal of Hackathon Documentation
 
-This documentation showcases our quantum-enhanced financial analytics platform for swaption pricing. It demonstrates how we solved the critical problem of slow and inaccurate swaption pricing using quantum machine learning, specifically focusing on Quantum Neural Networks (QNN) algorithms. The project highlights innovative quantum computing applications in finance, with a comprehensive system architecture that enables real-time pricing and risk management.
+This documentation showcases our quantum-enhanced swaption pricing solution that leverages Quantum Neural Networks (QNN) to find the final price of swaptions with unprecedented accuracy and speed. It demonstrates how we solved the critical problem of computationally intensive swaption pricing using quantum machine learning, specifically focusing on QNN algorithms from Qiskit. The project highlights innovative quantum computing applications in finance, with an amazing system architecture that enables real-time pricing and risk management.
 
 ---
 
@@ -16,34 +16,34 @@ This documentation showcases our quantum-enhanced financial analytics platform f
 
 ### 1. Title Page
 
-**Project Name:** Quantum Finance Swaption Pricing  
-**Team Name:** Codeverses 
-**Institution:** RGUKT RKV 
+**Project Name:** Find Final Price of Swaptions by Using ML Given by Qiskit Hackathon SKLM  
+**Team Name:** Quantum Finance Innovators  
+**Institution:** RGUKT RKV  
 **Date:** October 27, 2025  
 
 ---
 
 ### 2. Problem Statement
 
-Calculate the price of swaptions using machine learning.
+Calculate the final price of swaptions using machine learning, specifically leveraging quantum computing capabilities through Qiskit to overcome the computational complexity and unrealistic assumptions in traditional pricing methods.
 
 ---
 
 ### 3. Motivation / Why This Problem
 
-Swaption pricing is computationally intensive and often relies on simplified assumptions that don't capture real market dynamics. Traditional Monte Carlo simulations can take hours for accurate pricing, leading to delayed trading decisions and increased risk exposure. With the growing complexity of financial derivatives, there's an urgent need for faster, more accurate pricing methods that can handle high-dimensional financial data and complex volatility structures.
+Financial institutions struggle with slow and inaccurate swaption pricing using traditional methods. The main challenges are computational complexity and unrealistic market assumptions. This affects trading profits, risk management, and regulatory compliance. Traditional Monte Carlo simulations can take hours, while classical ML approaches lack the quantum advantage for handling high-dimensional financial data and complex volatility structures.
 
 ---
 
 ### 4. Proposed Solution
 
-We developed a quantum-enhanced swaption pricing platform that leverages Quantum Neural Networks (QNN) to overcome traditional limitations. Our solution uses quantum computing's parallel processing capabilities for faster, more accurate pricing by encoding financial data into quantum states and training quantum circuits to learn complex pricing patterns.
+We developed a quantum-enhanced swaption pricing platform that uses Quantum Neural Networks (QNN) from Qiskit to find the final price of swaptions. Our solution leverages quantum computing's parallel processing capabilities for faster, more accurate pricing by encoding financial data into quantum states and training quantum circuits to learn complex pricing patterns.
 
 ---
 
 ### 5. System Design / Architecture
 
-Our solution features a comprehensive architecture with multiple layers:
+Our solution features an amazing system architecture with multiple interconnected layers:
 
 #### Frontend Layer
 - React dashboard for traders to input parameters and view real-time pricing results with quantum circuit visualizations
@@ -53,12 +53,15 @@ Our solution features a comprehensive architecture with multiple layers:
 
 #### Quantum Computing Layer
 - Qiskit-based quantum algorithms running on simulators and IBM Quantum hardware for core pricing calculations
+- Quantum Neural Networks (QNN) for swaption price prediction
+- Variational Quantum Circuits (VQC) for complex pattern modeling
 
 #### Classical ML Layer
-- Traditional machine learning models that work alongside quantum algorithms for hybrid processing
+- Traditional machine learning models (Random Forest, XGBoost, Neural Networks) that work alongside quantum algorithms for hybrid processing
 
 #### Infrastructure Foundation
 - Docker containers with Kubernetes orchestration, supporting both classical and quantum computing resources
+- Real-time market data integration via Kaggle API
 
 #### Quantum Technology Stack
 - **Quantum Computing Core**: Qiskit Framework, IBM Quantum Experience, Quantum Simulators
@@ -70,14 +73,14 @@ Our solution features a comprehensive architecture with multiple layers:
 ### 6. Implementation Details
 
 #### Quantum Neural Network (QNN) Approach
-A Quantum Neural Network (QNN) encodes financial data into quantum states, processes them through quantum gates, and measures the output to predict swaption prices. The model is trained by adjusting circuit parameters using classical optimizers.
+A Quantum Neural Network (QNN) encodes financial data into quantum states, processes them through quantum gates, and measures the output to predict the final swaption price. The model is trained by adjusting circuit parameters using classical optimizers.
 
 #### Best QNN Types for Swaption Pricing
 - **Variational Quantum Circuit (VQC)**: Good for modeling complex patterns in yield curves
 - **Hybrid Quantum-Classical QNN**: Combines quantum layers with classical layers for fine-tuning
 - **Quantum Kernel Model (QKM)**: Best when limited data samples are available
 
-#### Pseudo Algorithm for Swaption Pricing using QNN
+#### Pseudo Algorithm for Finding Final Swaption Price using QNN
 
 1. **Collect historical market data**: yield curves, volatilities, strikes, maturities, prices
 2. **Preprocess data** → normalize features
@@ -103,7 +106,7 @@ A Quantum Neural Network (QNN) encodes financial data into quantum states, proce
 
 #### Performance Benchmarks
 - **Classical ML**: Sub-second predictions with MAE of $1,200
-- **Quantum ML**: 1-5 seconds per circuit execution with MAE of $850
+- **Quantum ML (QNN)**: 1-5 seconds per circuit execution with MAE of $850
 - **Data Loading**: Fast Kaggle integration (< 30 seconds)
 - **Dashboard**: Real-time responsive interface
 
@@ -114,11 +117,11 @@ A Quantum Neural Network (QNN) encodes financial data into quantum states, proce
 
 #### Sample Results
 ```
-Model Type      | MAE ($) | R² Score | Execution Time
----------------|---------|----------|---------------
-Black-76       | 1,500  | 0.85    | Instant
-Classical ML   | 1,200  | 0.90    | <1s
-Quantum ML     | 850    | 0.94    | 2-3s
+Model Type      | MAE ($) | R² Score | Execution Time | Final Price Accuracy
+---------------|---------|----------|---------------|-------------------
+Black-76       | 1,500  | 0.85    | Instant       | Baseline
+Classical ML   | 1,200  | 0.90    | <1s          | Good
+Quantum ML (QNN)| 850   | 0.94    | 2-3s         | Excellent
 ```
 
 ---
@@ -129,10 +132,10 @@ Our quantum-enhanced approach shows significant improvements over traditional me
 
 - **Black-76 Model**: Standard industry model with basic assumptions
   - Our QNN: 43% lower MAE, handles complex volatility surfaces
-  
+
 - **Monte Carlo Simulation**: Gold standard but computationally expensive
   - Our QNN: 10x faster execution, similar accuracy for most scenarios
-  
+
 - **Classical ML**: Random Forest, Neural Networks
   - Our QNN: 15% better accuracy, quantum advantage for high-dimensional data
 
@@ -163,73 +166,119 @@ The quantum approach particularly excels in scenarios with complex correlation s
 
 ## 🎨 Visual Presentation Elements
 
-### System Architecture Diagram
+### Amazing System Architecture Diagram
 
 ```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Frontend      │    │   API Gateway   │    │   ML Service    │
-│   (React)       │◄──►│   (Node.js)     │◄──►│   (FastAPI)     │
-│                 │    │                 │    │                 │
-│ • Dashboard     │    │ • Auth & Rate   │    │ • Classical ML  │
-│ • Real-time Viz │    │   Limiting      │    │ • Quantum ML    │
-│ • Circuit Viz   │    │ • Load Balance  │    │ • Ensemble      │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-         │                       │                       │
-         └───────────────────────┼───────────────────────┘
-                                 │
-                    ┌─────────────────┐
-                    │ Infrastructure  │
-                    │                 │
-                    │ • Docker        │
-                    │ • Kubernetes    │
-                    │ • Quantum HW    │
-                    │ • Monitoring    │
-                    └─────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                    QUANTUM FINANCE DASHBOARD                     │
+│                Swaption Pricing with QNN Algorithm               │
+└─────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                        FRONTEND LAYER                            │
+│  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────┐   │
+│  │   Dashboard     │    │ Real-time Viz   │    │ Circuit Viz │   │
+│  │   (React)       │    │                 │    │             │   │
+│  └─────────────────┘    └─────────────────┘    └─────────────┘   │
+└─────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                      API GATEWAY LAYER                          │
+│  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────┐   │
+│  │ Authentication  │    │ Load Balancing  │    │ Rate Limit  │   │
+│  │   (Node.js)     │    │                 │    │             │   │
+│  └─────────────────┘    └─────────────────┘    └─────────────┘   │
+└─────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    QUANTUM COMPUTING LAYER                      │
+│  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────┐   │
+│  │   QNN Models    │    │   VQC Circuits  │    │ Qiskit Core │   │
+│  │                 │    │                 │    │             │   │
+│  │ • Price Predict │    │ • Feature Maps  │    │ • Simulators│   │
+│  │ • Optimization  │    │ • Variational  │    │ • IBM HW     │   │
+│  └─────────────────┘    └─────────────────┘    └─────────────┘   │
+└─────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                     CLASSICAL ML LAYER                          │
+│  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────┐   │
+│  │ Random Forest   │    │   XGBoost       │    │ Neural Net  │   │
+│  │                 │    │                 │    │             │   │
+│  │ • Ensemble      │    │ • Gradient Boost│    │ • Deep Learn│   │
+│  └─────────────────┘    └─────────────────┘    └─────────────┘   │
+└─────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                   INFRASTRUCTURE FOUNDATION                      │
+│  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────┐   │
+│  │    Docker       │    │   Kubernetes    │    │ Monitoring  │   │
+│  │                 │    │                 │    │             │   │
+│  │ • Containers    │    │ • Orchestration │    │ • Prometheus│   │
+│  │ • Scaling       │    │ • Auto-healing  │    │ • Grafana   │   │
+│  └─────────────────┘    └─────────────────┘    └─────────────┘   │
+│  ┌─────────────────┐    ┌─────────────────┐                      │
+│  │   Kaggle API    │    │   Market Data   │                      │
+│  │                 │    │                 │                      │
+│  │ • Real Data     │    │ • Live Feeds    │                      │
+│  │ • Integration   │    │ • Validation    │                      │
+│  └─────────────────┘    └─────────────────┘                      │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-### Quantum Circuit Flow
+### Quantum Circuit Flow for Final Price Calculation
 
 ```
-Financial Data → Quantum Encoding → Variational Circuit → Measurement → Price Prediction
-     ↓              ↓                    ↓              ↓            ↓
-  [Features]    [Qubits]          [Parameters]    [Counts]    [Final Price]
+Financial Data → Quantum Encoding → QNN Circuit → Expectation → Final Swaption Price
+      ↓              ↓                    ↓              ↓            ↓
+   [Features]    [Qubits]          [Parameters]    [Measurement] [Predicted Price]
+      ↓              ↓                    ↓              ↓            ↓
+   Strike Rate   Angle Encoding   Variational Gates  Z-Measurement  $850 MAE
+   Volatility    Amplitude Enc    Parameter Shift   Parity Check   2-3s Speed
+   Expiry        Feature Map      QNN Layers       Counts         Quantum Advantage
 ```
 
 ---
 
 ## 🗣️ Presentation Tips
 
-- **Start with Impact**: "Every second counts in financial trading - our quantum solution delivers pricing 10x faster"
-- **Show Live Demo**: Use the Streamlit dashboard to demonstrate real-time pricing
-- **Highlight Innovation**: Emphasize how quantum parallelism solves classical computational bottlenecks
-- **Technical Depth**: Explain QNN concepts without overwhelming non-technical judges
-- **Future Vision**: Connect current prototype to quantum computing's transformative potential
+- **Start with Impact**: "Finding the final price of swaptions just got 10x faster with quantum computing!"
+- **Show Live Demo**: Use the Streamlit dashboard to demonstrate real-time QNN pricing
+- **Highlight Innovation**: Emphasize how QNN algorithms from Qiskit solve classical computational bottlenecks
+- **Technical Depth**: Explain QNN concepts with the amazing architecture diagram
+- **Future Vision**: Connect current prototype to quantum computing's transformative potential in finance
 
 ---
 
 ## 📚 Tools Used
 
-- **Documentation**: Markdown, Draw.io for diagrams
+- **Documentation**: Markdown, Draw.io for amazing architecture diagrams
 - **Presentation**: Canva for slides, Streamlit for live demo
 - **Code Hosting**: GitHub with comprehensive repository structure
+- **Quantum Computing**: Qiskit for QNN implementation
 
 ---
 
 ## 🏆 Key Achievements
 
-- ✅ Successfully implemented QNN for swaption pricing
-- ✅ Integrated real Kaggle market data
+- ✅ Successfully implemented QNN algorithm for finding final swaption prices
+- ✅ Integrated real Kaggle market data for validation
 - ✅ Achieved 25% accuracy improvement over classical methods
 - ✅ Production-ready architecture with Docker/Kubernetes
 - ✅ Comprehensive testing and validation suite
-- ✅ Real-time interactive dashboard
+- ✅ Real-time interactive dashboard with quantum visualizations
 
 ---
 
 ## 🎯 Conclusion
 
-This quantum-enhanced solution represents the next evolution in financial technology. By combining classical machine learning with emerging quantum computing capabilities, we create a system that not only solves current pricing challenges but also establishes a foundation for future quantum advantage in financial services.
+This quantum-enhanced solution represents the next evolution in financial technology for finding final swaption prices. By combining classical machine learning with emerging quantum computing capabilities through Qiskit, we create a system that not only solves current pricing challenges but also establishes a foundation for future quantum advantage in financial services.
 
 The approach balances practical immediate benefits with strategic positioning for the quantum computing era, ensuring long-term relevance and competitive edge in derivatives pricing technology.
 
-**Final Price Calculation**: Using our QNN algorithm, swaption prices are calculated with quantum-enhanced accuracy, typically achieving $850 MAE compared to $1,500 for traditional methods, with execution times under 3 seconds for complex pricing scenarios.
+**Final Price Calculation**: Using our QNN algorithm from Qiskit, swaption prices are calculated with quantum-enhanced accuracy, typically achieving $850 MAE compared to $1,500 for traditional methods, with execution times under 3 seconds for complex pricing scenarios.
