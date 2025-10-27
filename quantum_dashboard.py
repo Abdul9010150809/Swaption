@@ -1417,8 +1417,9 @@ def show_live_pricing(pricer, classical_ml, quantum_ml):
             )
             
             # Generate circuit without execution for preview
-            preview_circuit = quantum_ml.circuit_generator._generate_circuit_by_type(
-                qnn_circuit_type, features, None
+            preview_circuit = quantum_ml._generate_circuit_by_type(
+            qnn_circuit_type, features, None
+
             )
             
             if preview_circuit:
