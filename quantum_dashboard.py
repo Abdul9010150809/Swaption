@@ -1699,7 +1699,7 @@ def show_live_pricing(pricer, classical_ml, quantum_ml):
                     x=models,
                     y=prices,
                     marker_color=['gray', 'blue', 'orange'],
-                    text=[f"${p:,.0f}" for p in prices],
+                    text=[f"${p:,.0f}" if p is not None and isinstance(p, (int, float)) else "N/A" for p in prices],
                     textposition='auto',
                     hovertemplate='<b>%{x}</b><br>Price: $%{y:,.0f}<br>Error: %{customdata:.1f}%<extra></extra>',
                     customdata=errors
