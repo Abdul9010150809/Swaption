@@ -55,16 +55,28 @@ except ImportError:
     logger.warning("Kaggle API not found. Please install with 'pip install kaggle'.")
 
 def setup_kaggle():
-    """Setup Kaggle API credentials"""
+    """Setup Kaggle API credentials with better error handling"""
     if not KaggleApi:
+        st.warning("Kaggle API package not installed. Use: pip install kaggle")
         return None
+    
     try:
-        os.environ['KAGGLE_CONFIG_DIR'] = os.path.abspath('.')  # current directory
+        # Set KAGGLE_CONFIG_DIR to current directory
+        os.environ['KAGGLE_CONFIG_DIR'] = os.path.abspath('.')
+        
+        # Check if kaggle.json exists
+        kaggle_json_path = os.path.join(os.path.abspath('.'), 'kaggle.json')
+        if not os.path.exists(kaggle_json_path):
+            st.warning(f"kaggle.json not found at {kaggle_json_path}")
+            st.info("Please download kaggle.json from https://www.kaggle.com/settings and place it in the current directory")
+            return None
+        
         api = KaggleApi()
         api.authenticate()
+        st.success("✅ Kaggle API authenticated successfully!")
         return api
     except Exception as e:
-        print(f"Kaggle API not available: {e}")
+        st.error(f"❌ Kaggle API authentication failed: {e}")
         return None
 
 # --- QUANTUM COMPUTING IMPORTS ---
@@ -174,6 +186,9 @@ class ConfigManager:
 class KaggleDataManager:
     """Minimal Kaggle data manager used as a base class for enhanced manager."""
     def __init__(self):
+        self.api = None
+        self.loaded_datasets = {}
+        self.data_dir = './kaggle_data'
         # Try to initialize Kaggle API if available, otherwise None
         try:
             self.api = setup_kaggle()
@@ -2121,7 +2136,14 @@ class PerformanceAnalytics:
 # --- STREAMLIT DASHBOARD ---
 def main():
     """Enhanced dashboard with Kaggle integration"""
-    
+    if 'rates_loaded' not in st.session_state:
+        st.session_state.rates_loaded = False
+    if 'yield_loaded' not in st.session_state:
+        st.session_state.yield_loaded = False
+    if 'rates_data' not in st.session_state:
+        st.session_state.rates_data = None
+    if 'yield_data' not in st.session_state:
+        st.session_state.yield_data = None
     st.set_page_config(
         page_title="Quantum Finance Pro - Kaggle Edition",
         page_icon="⚛️",
@@ -3500,6 +3522,23 @@ def show_kaggle_data(kaggle_manager, pricer):
     - **Real-time Updates**: Live market data feeds
     """)
     
+    # Display Kaggle API Status
+    st.markdown("### 🔄 Kaggle API Status")
+    
+    col_status1, col_status2, col_status3 = st.columns(3)
+    
+    with col_status1:
+        api_status = "✅ Connected" if kaggle_manager.api else "❌ Not Available"
+        st.metric("Kaggle API", api_status)
+    
+    with col_status2:
+        datasets_loaded = len(kaggle_manager.loaded_datasets)
+        st.metric("Datasets Loaded", datasets_loaded)
+    
+    with col_status3:
+        data_source = "Real Data" if kaggle_manager.api else "Synthetic Data"
+        st.metric("Data Source", data_source)
+    
     # Data Loading Controls
     st.markdown("### 📥 Data Loading")
     
@@ -3510,16 +3549,18 @@ def show_kaggle_data(kaggle_manager, pricer):
             with st.spinner("Loading interest rate data from Kaggle..."):
                 try:
                     df = kaggle_manager.load_interest_rates()
-                    st.session_state.rates_data = df
-                    st.session_state.rates_loaded = True
-                    st.success(f"✅ Loaded {len(df)} interest rate records!")
-                    
-                    # Show data quality metrics if available
-                    if hasattr(kaggle_manager, 'data_quality_metrics'):
-                        metrics = kaggle_manager.data_quality_metrics.get('interest_rates', {})
-                        if metrics:
-                            st.info(f"📊 Data Quality: {metrics.get('completeness_score', 0):.1f}% complete")
-                            
+                    if df is not None:
+                        st.session_state.rates_data = df
+                        st.session_state.rates_loaded = True
+                        st.success(f"✅ Loaded {len(df)} interest rate records!")
+                        
+                        # Show data preview
+                        with st.expander("📋 Data Preview"):
+                            st.dataframe(df.head(10), use_container_width=True)
+                            st.write(f"**Date Range:** {df['date'].min()} to {df['date'].max()}")
+                    else:
+                        st.error("❌ Failed to load interest rate data")
+                        
                 except Exception as e:
                     st.error(f"❌ Failed to load interest rate data: {e}")
     
@@ -3528,55 +3569,64 @@ def show_kaggle_data(kaggle_manager, pricer):
             with st.spinner("Loading yield curve data from Kaggle..."):
                 try:
                     df = kaggle_manager.load_yield_curve()
-                    st.session_state.yield_data = df
-                    st.session_state.yield_loaded = True
-                    st.success(f"✅ Loaded {len(df)} yield curve records!")
+                    if df is not None:
+                        st.session_state.yield_data = df
+                        st.session_state.yield_loaded = True
+                        st.success(f"✅ Loaded {len(df)} yield curve records!")
+                        
+                        # Show data preview
+                        with st.expander("📋 Data Preview"):
+                            st.dataframe(df.head(10), use_container_width=True)
+                            if 'date' in df.columns:
+                                st.write(f"**Date Range:** {df['date'].min()} to {df['date'].max()}")
+                    else:
+                        st.error("❌ Failed to load yield curve data")
+                        
                 except Exception as e:
                     st.error(f"❌ Failed to load yield curve data: {e}")
     
     with col3:
-        if st.button("🔄 Refresh All Data", type="secondary", key="kaggle_refresh"):
+        if st.button("🔄 Clear Cache", type="secondary", key="kaggle_clear"):
             st.session_state.rates_data = None
             st.session_state.yield_data = None
+            st.session_state.rates_loaded = False
+            st.session_state.yield_loaded = False
             st.info("Data cache cleared. Click above buttons to reload.")
     
-    # Data Analysis and Visualization
-    st.markdown("### 📈 Data Analysis")
+    # Data Visualization Section
+    st.markdown("### 📈 Data Visualization")
     
-    col_data1, col_data2 = st.columns(2)
-    
-    with col_data1:
-        # Interest Rate Data Analysis
-        if 'rates_data' in st.session_state and st.session_state.rates_data is not None:
-            st.markdown("#### 💹 Interest Rate Analysis")
-            df_rates = st.session_state.rates_data
-            
-            # Basic info
-            st.write(f"**Dataset Info:** {len(df_rates)} records, {len(df_rates.columns)} columns")
-            
-            # Data preview
-            with st.expander("View Rate Data Sample"):
-                st.dataframe(df_rates.head(10), use_container_width=True)
-            
-            # Rate visualization
+    # Interest Rate Data Display
+    if st.session_state.get('rates_loaded', False) and st.session_state.rates_data is not None:
+        st.markdown("#### 💹 Interest Rate Analysis")
+        df_rates = st.session_state.rates_data
+        
+        col_rates1, col_rates2 = st.columns([2, 1])
+        
+        with col_rates1:
+            # Time series visualization
             if 'date' in df_rates.columns:
-                # Find rate columns
-                rate_columns = [col for col in df_rates.columns if any(term in col.lower() for term in ['rate', 'sofr', 'libor', 'ust'])]
+                # Convert date column if needed
+                if not pd.api.types.is_datetime64_any_dtype(df_rates['date']):
+                    df_rates['date'] = pd.to_datetime(df_rates['date'])
+                
+                # Get numeric columns for rates
+                rate_columns = [col for col in df_rates.columns 
+                              if col != 'date' and pd.api.types.is_numeric_dtype(df_rates[col])]
                 
                 if rate_columns:
                     selected_rates = st.multiselect(
                         "Select Rates to Display",
                         rate_columns,
-                        default=rate_columns[:2] if len(rate_columns) >= 2 else rate_columns,
-                        key="rates_select"
+                        default=rate_columns[:min(3, len(rate_columns))],
+                        key="rates_viz_select"
                     )
                     
                     if selected_rates:
-                        # Time series plot
                         fig_rates = go.Figure()
                         for rate_col in selected_rates:
-                            # Use last 100 points for performance
-                            display_data = df_rates.tail(100) if len(df_rates) > 100 else df_rates
+                            # Use last 200 points for better performance
+                            display_data = df_rates.tail(200) if len(df_rates) > 200 else df_rates
                             fig_rates.add_trace(go.Scatter(
                                 x=display_data['date'],
                                 y=display_data[rate_col],
@@ -3588,37 +3638,40 @@ def show_kaggle_data(kaggle_manager, pricer):
                         fig_rates.update_layout(
                             title='Interest Rate Time Series',
                             xaxis_title='Date',
-                            yaxis_title='Rate (%)',
+                            yaxis_title='Rate',
                             height=400,
                             showlegend=True
                         )
                         st.plotly_chart(fig_rates, use_container_width=True)
-                
-                # Statistical summary
-                st.markdown("#### 📊 Statistical Summary")
-                numeric_cols = df_rates.select_dtypes(include=[np.number]).columns
-                if len(numeric_cols) > 0:
-                    st.dataframe(df_rates[numeric_cols].describe(), use_container_width=True)
+        
+        with col_rates2:
+            # Statistical summary
+            st.markdown("**Statistical Summary**")
+            if rate_columns:
+                summary_data = []
+                for col in rate_columns[:5]:  # Show first 5 columns
+                    summary_data.append({
+                        'Rate': col,
+                        'Mean': f"{df_rates[col].mean():.4f}",
+                        'Std': f"{df_rates[col].std():.4f}",
+                        'Latest': f"{df_rates[col].iloc[-1]:.4f}"
+                    })
+                st.dataframe(pd.DataFrame(summary_data), use_container_width=True)
     
-    with col_data2:
-        # Yield Curve Data Analysis
-        if 'yield_data' in st.session_state and st.session_state.yield_data is not None:
-            st.markdown("#### 📈 Yield Curve Analysis")
-            df_yield = st.session_state.yield_data
-            
-            # Basic info
-            st.write(f"**Dataset Info:** {len(df_yield)} records, {len(df_yield.columns)} columns")
-            
-            # Data preview
-            with st.expander("View Yield Data Sample"):
-                st.dataframe(df_yield.head(10), use_container_width=True)
-            
+    # Yield Curve Data Display
+    if st.session_state.get('yield_loaded', False) and st.session_state.yield_data is not None:
+        st.markdown("#### 📈 Yield Curve Analysis")
+        df_yield = st.session_state.yield_data
+        
+        col_yield1, col_yield2 = st.columns([2, 1])
+        
+        with col_yield1:
             # Yield curve visualization
             if len(df_yield) > 0:
                 # Get the latest yield curve
                 latest_yield = df_yield.iloc[-1]
                 
-                # Extract yield curve tenors and rates
+                # Define tenor mapping
                 tenor_map = {
                     '1M': 1/12, '3M': 0.25, '6M': 0.5, '1Y': 1.0,
                     '2Y': 2.0, '5Y': 5.0, '10Y': 10.0, '20Y': 20.0, '30Y': 30.0
@@ -3626,6 +3679,7 @@ def show_kaggle_data(kaggle_manager, pricer):
                 
                 tenors = []
                 rates = []
+                tenor_labels = []
                 
                 for tenor_str, tenor_val in tenor_map.items():
                     if tenor_str in latest_yield:
@@ -3633,78 +3687,104 @@ def show_kaggle_data(kaggle_manager, pricer):
                             rate_val = float(latest_yield[tenor_str])
                             tenors.append(tenor_val)
                             rates.append(rate_val)
+                            tenor_labels.append(tenor_str)
                         except (ValueError, TypeError):
                             continue
                 
                 if tenors and rates:
-                    fig_yield_curve = go.Figure()
-                    fig_yield_curve.add_trace(go.Scatter(
+                    fig_yield = go.Figure()
+                    fig_yield.add_trace(go.Scatter(
                         x=tenors,
                         y=rates,
-                        mode='lines+markers',
+                        mode='lines+markers+text',
                         line=dict(color='green', width=3),
-                        marker=dict(size=8)
+                        marker=dict(size=8),
+                        text=tenor_labels,
+                        textposition="top center"
                     ))
-                    fig_yield_curve.update_layout(
+                    fig_yield.update_layout(
                         title='Current Yield Curve',
                         xaxis_title='Tenor (Years)',
-                        yaxis_title='Yield (%)',
+                        yaxis_title='Yield',
                         height=400
                     )
-                    st.plotly_chart(fig_yield_curve, use_container_width=True)
+                    st.plotly_chart(fig_yield, use_container_width=True)
+        
+        with col_yield2:
+            # Yield curve data table
+            st.markdown("**Latest Yield Data**")
+            if len(df_yield) > 0:
+                latest_data = df_yield.iloc[-1]
+                yield_data = []
+                for col in df_yield.columns:
+                    if col != 'date':
+                        try:
+                            value = float(latest_data[col])
+                            yield_data.append({'Tenor': col, 'Yield': f"{value:.4f}"})
+                        except (ValueError, TypeError):
+                            continue
+                
+                if yield_data:
+                    st.dataframe(pd.DataFrame(yield_data), use_container_width=True)
     
-    # Market Data Integration
-    st.markdown("### 🏛️ Current Market Data")
+    # Market Data Integration Status
+    st.markdown("### 🏛️ Market Data Integration Status")
     
     col_mkt1, col_mkt2 = st.columns(2)
     
     with col_mkt1:
-        st.markdown("#### 📊 Live Market Rates")
-        
-        # Display current market data from pricer
+        st.markdown("#### 📊 Current Market Data")
         market_data = pricer.market_data
         
-        rate_data = []
-        for key, value in market_data.items():
-            if key != 'timestamp' and isinstance(value, (int, float)):
-                if 'rate' in key.lower() or any(term in key for term in ['SOFR', 'LIBOR', 'UST', 'SWAP', 'VIX']):
-                    rate_data.append({
+        if market_data:
+            market_display = []
+            for key, value in market_data.items():
+                if key != 'timestamp' and isinstance(value, (int, float)):
+                    if value < 1:  # Assume it's a rate
+                        display_value = f"{value:.3%}"
+                    else:
+                        display_value = f"{value:.2f}"
+                    market_display.append({
                         'Indicator': key.replace('_', ' ').title(),
-                        'Value': f"{value:.3%}" if value < 1 else f"{value:.2f}",
-                        'Raw Value': value
+                        'Value': display_value
                     })
-        
-        if rate_data:
-            st.dataframe(pd.DataFrame(rate_data)[['Indicator', 'Value']], use_container_width=True)
+            
+            if market_display:
+                st.dataframe(pd.DataFrame(market_display), use_container_width=True)
     
     with col_mkt2:
-        st.markdown("#### 🔄 Data Source Status")
+        st.markdown("#### 🔧 System Status")
         
-        status_data = []
+        status_info = []
+        status_info.append({'Component': 'Kaggle API', 'Status': '✅ Active' if kaggle_manager.api else '❌ Inactive'})
+        status_info.append({'Component': 'Interest Rates', 'Status': '✅ Loaded' if st.session_state.get('rates_loaded') else '📥 Ready'})
+        status_info.append({'Component': 'Yield Curve', 'Status': '✅ Loaded' if st.session_state.get('yield_loaded') else '📥 Ready'})
+        status_info.append({'Component': 'Data Source', 'Status': 'Real Data' if kaggle_manager.api else 'Synthetic Data'})
         
-        # Kaggle API status
-        kaggle_status = "✅ Connected" if kaggle_manager.api else "❌ Not Available"
-        status_data.append({'Source': 'Kaggle API', 'Status': kaggle_status})
+        st.dataframe(pd.DataFrame(status_info), use_container_width=True)
         
-        # Interest rates status
-        rates_status = "✅ Loaded" if 'rates_data' in st.session_state and st.session_state.rates_data is not None else "📥 Not Loaded"
-        status_data.append({'Source': 'Interest Rates', 'Status': rates_status})
-        
-        # Yield curve status
-        yield_status = "✅ Loaded" if 'yield_data' in st.session_state and st.session_state.yield_data is not None else "📥 Not Loaded"
-        status_data.append({'Source': 'Yield Curve', 'Status': yield_status})
-        
-        # Data freshness
-        if 'rates_data' in st.session_state and st.session_state.rates_data is not None:
-            df_rates = st.session_state.rates_data
-            if 'date' in df_rates.columns:
-                latest_date = pd.to_datetime(df_rates['date']).max()
-                days_old = (pd.Timestamp.now() - latest_date).days
-                freshness = f"📅 {days_old} days old" if days_old > 0 else "🆕 Current"
-                status_data.append({'Source': 'Data Freshness', 'Status': freshness})
-        
-        st.dataframe(pd.DataFrame(status_data), use_container_width=True)
-
+        # Data download option
+        if st.session_state.get('rates_loaded') or st.session_state.get('yield_loaded'):
+            st.markdown("#### 💾 Export Data")
+            if st.button("📥 Download All Data as CSV"):
+                # Combine available data
+                all_data = {}
+                if st.session_state.get('rates_loaded'):
+                    all_data['interest_rates'] = st.session_state.rates_data
+                if st.session_state.get('yield_loaded'):
+                    all_data['yield_curve'] = st.session_state.yield_data
+                
+                # Create downloadable CSV
+                if all_data:
+                    # For simplicity, we'll just export the first dataset
+                    first_key = list(all_data.keys())[0]
+                    csv_data = all_data[first_key].to_csv(index=False)
+                    st.download_button(
+                        label="Download CSV",
+                        data=csv_data,
+                        file_name=f"financial_data_{datetime.now().strftime('%Y%m%d')}.csv",
+                        mime="text/csv"
+                    )
 # Duplicate show_live_pricing function removed — the earlier definition above is used for live pricing.
 # This block was intentionally removed to avoid redefining show_live_pricing.
 if __name__ == "__main__":
