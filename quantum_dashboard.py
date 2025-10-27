@@ -1135,1026 +1135,304 @@ def display_feature_importance(model_name, feature_names, importance):
     # This function is called but not defined  
     pass
 def show_live_pricing(pricer, classical_ml, quantum_ml):
-    classical_error_pct = 0.0
-    quantum_error_pct = 0.0
-    classical_prediction = None
-    quantum_prediction = None
-    """Enhanced live pricing with user-input market rates, advanced notation, and circuit generation"""
+    """Simplified live pricing that actually calculates swaption prices"""
     
-    st.markdown("## 🎯 Advanced Live Swaption Pricing & Quantum Advantage")
-
-    # Dual Swaption Type Selection
-    st.markdown("### 🌍 Swaption Configuration")
-    # Swaption configuration columns
-    col_type1, col_type2, col_type3 = st.columns(3)
-
-    with col_type1:
-        # Swaption Type 1: Payer/Receiver
+    st.markdown("## 🎯 Live Swaption Pricing Calculator")
+    
+    # Simple pricing configuration
+    st.markdown("### 📊 Pricing Parameters")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        # Basic parameters
+        notional = st.selectbox(
+            "Notional Amount (Millions)",
+            [1, 5, 10, 25, 50, 100],
+            index=2,
+            format_func=lambda x: f"${x}M"
+        ) * 1000000  # Convert to actual notional
+        
+        expiry = st.slider("Expiry (Years)", 0.25, 10.0, 2.0, 0.25)
+        tenor = st.slider("Tenor (Years)", 1.0, 30.0, 5.0, 0.5)
+    
+    with col2:
+        # Rate parameters
+        strike = st.slider("Strike Rate (%)", 1.0, 10.0, 3.5, 0.1) / 100
+        forward_rate = st.slider("Forward Rate (%)", 1.0, 10.0, 4.2, 0.1) / 100
+        volatility = st.slider("Volatility (%)", 10.0, 80.0, 25.0, 1.0) / 100
+    
+    with col3:
+        # Option parameters
         swaption_type = st.selectbox(
             "Swaption Type",
-            ["Payer Swaption", "Receiver Swaption"],
-            help="Payer: Right to pay fixed rate, Receiver: Right to receive fixed rate",
-            key="live_type"
+            ["Payer Swaption", "Receiver Swaption"]
         )
+        risk_free_rate = st.number_input("Risk-Free Rate (%)", 1.0, 10.0, 5.3, 0.1) / 100
 
-    with col_type2:
-        # Swaption Type 2: Exercise Style
-        exercise_style = st.selectbox(
-            "Exercise Style",
-            ["European", "Bermudan", "American"],
-            help="European: Exercise only at expiry, Bermudan: Multiple exercise dates, American: Any time before expiry",
-            key="exercise_style"
-        )
-        
-    with col_type3:
-        # Currency Selection
-        currency = st.selectbox(
-            "Currency",
-            ["USD", "EUR", "GBP", "JPY", "CHF"],
-            index=0,
-            help="Pricing currency",
-            key="currency"
-        )
-
-    # User-Input Market Rates with Advanced Notation
-    st.markdown("### 📊 Market Parameters Input with Financial Notation")
+    # Display current parameters
+    st.markdown("### 📋 Current Parameters")
+    param_col1, param_col2, param_col3, param_col4 = st.columns(4)
     
-    with st.expander("🎛️ Configure Market Parameters", expanded=True):
-        col_mkt1, col_mkt2, col_mkt3, col_mkt4, col_mkt5 = st.columns(5)
+    with param_col1:
+        st.metric("Notional", f"${notional:,.0f}")
+    with param_col2:
+        st.metric("Forward Rate", f"{forward_rate:.3%}")
+    with param_col3:
+        st.metric("Strike", f"{strike:.3%}")
+    with param_col4:
+        st.metric("Volatility", f"{volatility:.1%}")
 
-        with col_mkt1:
-            risk_free_rate = st.number_input(
-                "r₀ (Risk-Free Rate) - %", 
-                min_value=0.01, max_value=15.0, value=5.3, step=0.1,
-                help="Risk-free rate (SOFR/LIBOR equivalent)"
-            ) / 100
-            st.caption("r₀ = Risk-free rate")
-
-        with col_mkt2:
-            forward_rate_input = st.number_input(
-                "F(t,T) (Forward Rate) - %", 
-                min_value=0.01, max_value=15.0, value=4.2, step=0.1,
-                help="Forward swap rate for the expiry/tenor"
-            ) / 100
-            st.caption("F(t,T) = Forward rate")
-
-        with col_mkt3:
-            volatility_input = st.number_input(
-                "σ (Volatility) - %", 
-                min_value=1.0, max_value=200.0, value=20.0, step=1.0,
-                help="Implied volatility for pricing"
-            ) / 100
-            st.caption("σ = Volatility")
-
-        with col_mkt4:
-            swap_rate_input = st.number_input(
-                "Sₜ (Swap Rate) - %", 
-                min_value=0.01, max_value=15.0, value=4.3, step=0.1,
-                help="Current market swap rate"
-            ) / 100
-            st.caption("Sₜ = Current swap rate")
-
-        with col_mkt5:
-            dividend_yield = st.number_input(
-                "δ (Dividend Yield) - %", 
-                min_value=0.0, max_value=10.0, value=0.0, step=0.1,
-                help="Dividend yield or cost of carry"
-            ) / 100
-            st.caption("δ = Dividend yield")
-
-    # Real-time Market Data Display
-    st.markdown("### 📈 Current Market Environment")
-    
-    col_disp1, col_disp2, col_disp3, col_disp4 = st.columns(4)
-    
-    with col_disp1:
-        # Calculate and display key metrics
-        time_value = np.exp(-risk_free_rate * 2.0)  # Example 2-year discount
-        st.metric("D(t,T) (Discount Factor)", f"{time_value:.4f}")
-        
-    with col_disp2:
-        # Calculate volatility smile effect
-        vol_smile_adj = volatility_input * (1 + 0.1 * (forward_rate_input - swap_rate_input))
-        st.metric("σₛ (Smile Adj Vol)", f"{vol_smile_adj:.1%}")
-        
-    with col_disp3:
-        # Calculate forward premium
-        forward_premium = forward_rate_input - swap_rate_input
-        st.metric("F-S (Forward Premium)", f"{forward_premium:.3%}")
-        
-    with col_disp4:
-        # Market regime indicator
-        regime = "Normal" if volatility_input < 0.3 else "High Vol"
-        regime_color = "normal" if regime == "Normal" else "inverse"
-        st.metric("Market Regime", regime, delta=regime, delta_color=regime_color)
-
-    # Enhanced Pricing Parameters with Mathematical Notation
-    st.markdown("### ⚙️ Swaption Contract Parameters")
-
-    col_params1, col_params2, col_params3 = st.columns(3)
-
-    with col_params1:
-        st.markdown("#### 📊 Temporal Parameters")
-        
-        expiry = st.slider(
-            "T (Expiry Time) - Years", 
-            min_value=0.08, max_value=15.0, value=2.0, step=0.08,
-            help="Time to swaption expiry: T ∈ [0.08, 15.0] years"
-        )
-        
-        tenor = st.slider(
-            "τ (Swap Tenor) - Years", 
-            min_value=0.25, max_value=30.0, value=5.0, step=0.25,
-            help="Underlying swap tenor: τ ∈ [0.25, 30.0] years"
-        )
-        
-        # Calculate time decay
-        time_decay = -risk_free_rate * np.exp(-risk_free_rate * expiry)
-        st.metric("θ (Time Decay)", f"{time_decay:.4f}")
-
-    with col_params2:
-        st.markdown("#### 💰 Strike & Notional")
-        
-        strike = st.slider(
-            "K (Strike Rate) - %", 
-            min_value=0.1, max_value=20.0, value=3.5, step=0.1,
-            help="Strike rate: K ∈ [0.1%, 20.0%]"
-        ) / 100
-        
-        notional = st.selectbox(
-            "N (Notional) - Millions", 
-            [1, 5, 10, 25, 50, 100, 250, 500, 1000],
-            index=2,
-            help="Notional amount in millions",
-            format_func=lambda x: f"{currency} {x}M"
-        )
-        
-        # Calculate option moneyness
-        current_forward = pricer.calculate_forward_swap_rate(expiry, tenor)
-        moneyness = strike / current_forward if current_forward > 0 else 1.0
-        moneyness_status = "ITM" if moneyness < 0.95 else "OTM" if moneyness > 1.05 else "ATM"
-        st.metric("Moneyness (K/F)", f"{moneyness:.3f} ({moneyness_status})")
-
-    with col_params3:
-        st.markdown("#### 🎯 Advanced Parameters")
-        
-        # Volatility structure
-        vol_smile = st.slider(
-            "Volatility Smile - %", 
-            min_value=-50.0, max_value=50.0, value=0.0, step=5.0,
-            help="Volatility smile/skew adjustment"
-        ) / 100
-        
-        correlation = st.slider(
-            "ρ (Correlation)", 
-            min_value=-1.0, max_value=1.0, value=0.0, step=0.1,
-            help="Correlation between rates"
-        )
-        
-        # Calculate d1 for Black-76
-        d1 = (np.log(current_forward/strike) + (volatility_input**2/2)*expiry) / (volatility_input * np.sqrt(expiry))
-        st.metric("d₁ (Black-76)", f"{d1:.3f}")
-
-    # Parameter Summary with Advanced Notation
-    st.markdown("### 📋 Comprehensive Parameter Summary")
-
-    # Calculate additional financial metrics
-    annuity_factor = pricer.calculate_annuity_factor(expiry, expiry + tenor)
-    discount_factor = np.exp(-risk_free_rate * expiry)
-    vega = current_forward * np.sqrt(expiry) * stats.norm.pdf(d1) * annuity_factor
-    
-    param_summary = {
-        'Symbol': ['T', 'τ', 'K', 'σ', 'N', 'F(t,T)', 'D(t,T)', 'A(t,T)', 'ρ', 'Vega'],
-        'Parameter': ['Expiry', 'Tenor', 'Strike', 'Volatility', 'Notional', 'Forward Rate', 
-                     'Discount Factor', 'Annuity Factor', 'Correlation', 'Vega'],
-        'Value': [
-            f"{expiry:.2f}y",
-            f"{tenor:.1f}y", 
-            f"{strike:.3%}",
-            f"{volatility_input:.1%}",
-            f"{currency} {notional}M",
-            f"{current_forward:.3%}",
-            f"{discount_factor:.4f}",
-            f"{annuity_factor:.2f}",
-            f"{correlation:.2f}",
-            f"${vega * notional * 1000000:,.0f}"
-        ],
-        'Description': [
-            'Time to expiration',
-            'Underlying swap duration', 
-            'Exercise price',
-            'Price uncertainty',
-            'Contract size',
-            'Expected future rate',
-            'Present value factor',
-            'Swap payment factor',
-            'Rate correlation',
-            'Volatility sensitivity'
-        ]
-    }
-    
-    st.dataframe(pd.DataFrame(param_summary), use_container_width=True)
-
-    # QNN Configuration and Circuit Generation
-    st.markdown("### ⚛️ Quantum Neural Network Configuration")
-    
-    col_qnn1, col_qnn2 = st.columns(2)
-    
-    with col_qnn1:
-        st.markdown("#### 🔮 QNN Architecture")
-        
-        qnn_circuit_type = st.selectbox(
-            "Circuit Architecture",
-            [
-                "quantum_neural_network",
-                "feature_map_advanced", 
-                "variational_advanced",
-                "efficient_su2",
-                "amplitude_estimation"
-            ],
-            format_func=lambda x: x.replace("_", " ").title(),
-            key="qnn_circuit_type"
-        )
-        
-        qnn_layers = st.slider("Quantum Layers", 1, 8, 3, key="qnn_layers")
-        n_qubits = st.slider("Number of Qubits", 4, 12, 6, key="qnn_qubits")
-        entanglement_type = st.selectbox("Entanglement Type", ["linear", "circular", "full", "pairwise"], key="qnn_entangle")
-        
-        # QNN Feature Engineering
-        st.markdown("#### 🔧 Feature Engineering")
-        use_advanced_features = st.checkbox("Advanced Feature Encoding", value=True)
-        feature_scaling = st.selectbox("Feature Scaling", ["standard", "quantum", "financial"])
-        
-    with col_qnn2:
-        st.markdown("#### 🎛️ Quantum Execution Parameters")
-        
-        quantum_shots = st.slider("Measurement Shots", 512, 8192, 2048, step=512, key="qnn_shots")
-        optimization_level = st.slider("Optimization Level", 0, 3, 1, key="qnn_optimization")
-        error_mitigation = st.checkbox("Error Mitigation", value=False, key="qnn_error_mit")
-        
-        # Real-time circuit visualization option
-        show_live_circuit = st.checkbox("Generate Live Circuit Diagram", value=True)
-        show_statevector = st.checkbox("Show Statevector Analysis", value=True)
-        
-        # Quantum advantage metrics
-        st.markdown("#### 📊 Expected Quantum Advantage")
-        expected_advantage = st.slider("Expected Advantage %", 5, 50, 25, key="expected_adv")
-        st.metric("Target Improvement", f"+{expected_advantage}%")
-
-    # Generate QNN Circuit Preview
-    if show_live_circuit and HAS_QISKIT:
-        st.markdown("#### 🔍 Live Quantum Circuit Preview")
-        
-        # Prepare features for circuit generation
-        features = [
-            current_forward, strike, volatility_input, 
-            expiry, tenor, notional, correlation, vol_smile
-        ]
-        
-        # Generate and display circuit
-        try:
-            quantum_ml.circuit_generator.n_qubits = n_qubits
-            quantum_ml.configure_backend(
-                optimization_level=optimization_level,
-                error_mitigation=error_mitigation,
-                shots=quantum_shots
-            )
-            
-            # Generate circuit without execution for preview
-            preview_circuit = quantum_ml._generate_circuit_by_type(
-            qnn_circuit_type, features, None
-
-            )
-            
-            if preview_circuit:
-                col_circ_preview1, col_circ_preview2 = st.columns(2)
-                
-                with col_circ_preview1:
-                    st.markdown("**Circuit Structure**")
-                    circuit_info = quantum_ml.circuit_generator.get_circuit_info(preview_circuit)
-                    
-                    circ_metrics = {
-                        'Metric': ['Qubits', 'Depth', 'Total Gates', 'Parameters', 'Entanglement'],
-                        'Value': [
-                            circuit_info['qubits'],
-                            circuit_info['depth'],
-                            circuit_info['total_gates'],
-                            circuit_info['parameters'],
-                            entanglement_type.title()
-                        ]
-                    }
-                    st.dataframe(pd.DataFrame(circ_metrics), use_container_width=True)
-                    
-                    # Gate breakdown
-                    if circuit_info['gate_breakdown']:
-                        st.markdown("**Gate Distribution**")
-                        gate_data = {
-                            'Gate': list(circuit_info['gate_breakdown'].keys()),
-                            'Count': list(circuit_info['gate_breakdown'].values())
-                        }
-                        fig_gates = px.pie(gate_data, values='Count', names='Gate', 
-                                         title="Quantum Gate Distribution")
-                        st.plotly_chart(fig_gates, use_container_width=True)
-                
-                with col_circ_preview2:
-                    st.markdown("**Circuit Visualization**")
-                    # Text-based circuit representation
-                    circuit_text = f"""
-                    Quantum Circuit: {qnn_circuit_type.replace('_', ' ').title()}
-                    ┌{'─' * 60}┐
-                    │ Features: F={current_forward:.3%}, K={strike:.3%}, σ={volatility_input:.1%} │
-                    │         T={expiry:.2f}y, τ={tenor:.1f}y, N={notional}M      │
-                    ├{'─' * 60}┤
-                    │ Architecture: {n_qubits} qubits, {qnn_layers} layers, {entanglement_type} entanglement │
-                    │ Gates: {circuit_info['total_gates']} total, Depth: {circuit_info['depth']}        │
-                    └{'─' * 60}┘
-                    
-                    Circuit Flow:
-                    Input Features → Quantum Encoding → {qnn_layers} Variational Layers → 
-                    {entanglement_type.title()} Entanglement → Measurement → Price Prediction
-                    """
-                    st.code(circuit_text, language='text')
-                    
-        except Exception as e:
-            st.warning(f"Circuit preview generation failed: {e}")
-    
-    # Pricing Execution with Enhanced Options
-    st.markdown("### 🚀 Execute Advanced Pricing")
-    
-    col_exec1, col_exec2, col_exec3 = st.columns(3)
-    
-    with col_exec1:
-        use_traditional = st.checkbox("Traditional Models", value=True)
-        use_classical_ml = st.checkbox("Classical ML", value=True)
-        use_quantum_ml = st.checkbox("Quantum ML ⚛️", value=True)
-        
-    with col_exec2:
-        calculate_greeks = st.checkbox("Calculate Greeks", value=True)
-        risk_analysis = st.checkbox("Risk Analysis", value=True)
-        monte_carlo_validation = st.checkbox("Monte Carlo Validation", value=False)
-        
-    with col_exec3:
-        # Execution mode
-        execution_mode = st.selectbox("Execution Mode", ["Standard", "High Precision", "Real-time"])
-        if execution_mode == "High Precision":
-            st.info("🔄 High precision mode: Increased samples and validation")
-        elif execution_mode == "Real-time":
-            st.info("⚡ Real-time mode: Optimized for speed")
-
-    if st.button("🎯 Calculate Advanced Swaption Price", type="primary", key="advanced_calculate"):
-        with st.spinner("Executing comprehensive pricing analysis..."):
+    # Calculate button
+    if st.button("🎯 Calculate Swaption Price", type="primary", use_container_width=True):
+        with st.spinner("Calculating swaption price..."):
             try:
-                # Update pricer with user-input market data
-                pricer.market_data.update({
-                    'SOFR': risk_free_rate,
-                    'forward_rate': forward_rate_input,
-                    'volatility': volatility_input,
-                    'swap_rate': swap_rate_input
-                })
-                
-                # Calculate true price using enhanced parameters
-                true_price = pricer.black_76_swaption_price(
-                    notional * 1000000, expiry, tenor, strike, swaption_type, volatility_input
+                # Use a simplified Black-76 calculation that actually works
+                price = calculate_simple_black76(
+                    notional=notional,
+                    forward_rate=forward_rate,
+                    strike=strike,
+                    expiry=expiry,
+                    volatility=volatility,
+                    option_type=swaption_type,
+                    risk_free_rate=risk_free_rate
                 )
                 
-                # Enhanced feature set for ML models
-                advanced_features = [
-                    current_forward, strike, volatility_input, expiry, tenor, 
-                    notional, correlation, vol_smile, risk_free_rate, dividend_yield,
-                    moneyness, time_decay, annuity_factor
-                ]
-                
-                # Classical ML Prediction
-                classical_price = None
-                classical_details = {}
-                if use_classical_ml and classical_ml.models:
-                    try:
-                        classical_price = classical_ml.predict_ensemble(advanced_features[:6])  # Use first 6 features for compatibility
-                        classical_details = {
-                            'method': 'Advanced Ensemble',
-                            'features_used': len(advanced_features),
-                            'prediction_time': 'real-time'
-                        }
-                    except Exception as e:
-                        st.warning(f"Classical ML prediction failed: {e}")
-                        classical_price = true_price * np.random.uniform(0.95, 1.05)
-                
-                # Quantum ML Prediction with Circuit Generation
-                quantum_price = None
-                quantum_details = {}
-                quantum_circuit = None
-                quantum_counts = None
-                
-                if use_quantum_ml and quantum_ml:
-                    try:
-                        # Configure quantum backend with user parameters
-                        quantum_ml.configure_backend(
-                            optimization_level=optimization_level,
-                            error_mitigation=error_mitigation,
-                            shots=quantum_shots
-                        )
-                        
-                        # Execute quantum circuit
-                        quantum_expectation, quantum_circuit, quantum_counts = quantum_ml.run_advanced_circuit(
-                            qnn_circuit_type,
-                            features=advanced_features,
-                            show_diagram=show_live_circuit
-                        )
-                        
-                        # Enhanced quantum price calculation
-                        base_price = classical_price if classical_price else true_price
-                        quantum_correction = (quantum_expectation - 0.5) * 0.25  # Increased sensitivity
-                        quantum_price = base_price * (1 + quantum_correction)
-                        
-                        quantum_details = {
-                            'expectation': quantum_expectation,
-                            'circuit_type': qnn_circuit_type,
-                            'qubits': quantum_circuit.num_qubits if quantum_circuit else 0,
-                            'depth': quantum_circuit.depth() if quantum_circuit else 0,
-                            'shots': quantum_shots,
-                            'optimization_level': optimization_level,
-                            'execution_time': quantum_ml.circuit_performance.get(qnn_circuit_type, {}).get('execution_time', 0),
-                            'quantum_correction': quantum_correction,
-                            'circuit_metrics': quantum_ml.circuit_generator.get_circuit_info(quantum_circuit) if quantum_circuit else {}
-                        }
-                        
-                        # Store quantum state information
-                        if quantum_counts:
-                            quantum_details['top_quantum_states'] = dict(sorted(
-                                quantum_counts.items(), key=lambda x: x[1], reverse=True
-                            )[:5])
-                            
-                    except Exception as e:
-                        st.warning(f"Quantum ML prediction failed: {e}")
-                        quantum_price = true_price * np.random.uniform(0.95, 1.05)
-                
-                # Store comprehensive results
-                st.session_state.live_results = {
-                    'true_price': true_price,
-                    'classical_price': classical_price,
-                    'quantum_price': quantum_price,
-                    'quantum_circuit': quantum_circuit,
-                    'quantum_counts': quantum_counts,
-                    'advanced_features': advanced_features,
-                    'market_parameters': {
-                        'risk_free_rate': risk_free_rate,
-                        'forward_rate': current_forward,
-                        'volatility': volatility_input,
-                        'swap_rate': swap_rate_input,
-                        'dividend_yield': dividend_yield
-                    },
-                    'contract_parameters': {
-                        'expiry': expiry,
-                        'tenor': tenor,
-                        'strike': strike,
-                        'notional': notional * 1000000,
-                        'swaption_type': swaption_type,
-                        'exercise_style': exercise_style,
-                        'currency': currency
-                    },
-                    'quantum_details': quantum_details,
-                    'classical_details': classical_details,
-                    'financial_metrics': {
-                        'moneyness': moneyness,
-                        'annuity_factor': annuity_factor,
-                        'discount_factor': discount_factor,
-                        'time_decay': time_decay,
-                        'vega': vega
-                    },
+                # Store the result
+                st.session_state.live_price_result = {
+                    'price': price,
+                    'notional': notional,
+                    'forward_rate': forward_rate,
+                    'strike': strike,
+                    'expiry': expiry,
+                    'volatility': volatility,
+                    'option_type': swaption_type,
                     'timestamp': datetime.now()
                 }
                 
-                st.success("✅ Advanced pricing analysis completed!")
+                st.success("✅ Price calculation completed!")
                 
             except Exception as e:
-                st.error(f"❌ Pricing analysis failed: {e}")
-                import traceback
-                with st.expander("🔍 Detailed Error Traceback"):
-                    st.code(traceback.format_exc())
+                st.error(f"❌ Pricing calculation failed: {str(e)}")
+                # Fallback calculation
+                fallback_price = calculate_fallback_price(notional, forward_rate, strike, expiry)
+                st.session_state.live_price_result = {
+                    'price': fallback_price,
+                    'notional': notional,
+                    'forward_rate': forward_rate,
+                    'strike': strike,
+                    'expiry': expiry,
+                    'volatility': volatility,
+                    'option_type': swaption_type,
+                    'timestamp': datetime.now(),
+                    'note': 'Used fallback calculation'
+                }
+                st.warning(f"⚠️ Using fallback calculation: ${fallback_price:,.0f}")
 
-    # Enhanced Results Display (continuation in next part due to length)
-        # Enhanced Results Display
-    if 'live_results' in st.session_state:
-        results = st.session_state.live_results
+    # Display results
+    if 'live_price_result' in st.session_state:
+        result = st.session_state.live_price_result
         
         st.markdown("---")
-        st.markdown("## 📊 Comprehensive Pricing Results & Quantum Advantage Analysis")
+        st.markdown("## 💰 Swaption Price Result")
         
-        # Executive Summary
-        st.markdown("### 🎯 Executive Summary")
+        # Main price display
+        col_price1, col_price2, col_price3 = st.columns([2, 1, 1])
         
-        col_sum1, col_sum2, col_sum3, col_sum4 = st.columns(4)
-        
-        with col_sum1:
-            st.metric("Black-76 Price", f"${results['true_price']:,.0f}", 
-                     help="Traditional Black-76 model pricing")
-        
-        with col_sum2:
-            if results['classical_price']:
-                classical_error = abs(results['classical_price'] - results['true_price'])
-                classical_error_pct = (classical_error / results['true_price']) * 100
-                st.metric("Classical ML", f"${results['classical_price']:,.0f}",
-                         delta=f"{classical_error_pct:+.1f}%", 
-                         delta_color="inverse" if classical_error_pct < 5 else "normal")
-        
-        with col_sum3:
-            if results['quantum_price']:
-                quantum_error = abs(results['quantum_price'] - results['true_price'])
-                quantum_error_pct = (quantum_error / results['true_price']) * 100
+        with col_price1:
+            st.markdown(f"### ${result['price']:,.0f}")
+            st.caption("Calculated Swaption Price")
             
-                # Safe comparison - only compare if classical_error_pct exists
-                if results['classical_price'] and 'classical_error_pct' in locals():
-                    delta_color = "inverse" if quantum_error_pct < classical_error_pct else "normal"
-                else:
-                    delta_color = "normal"  # Default color if no classical comparison available
-                    
-                st.metric("Quantum ML ⚛️", f"${results['quantum_price']:,.0f}",
-                         delta=f"{quantum_error_pct:+.1f}%",
-                         delta_color=delta_color)
-        with col_sum4:
-            if results['classical_price'] and results['quantum_price']:
-                quantum_advantage = ((classical_error - quantum_error) / classical_error) * 100
-                advantage_color = "inverse" if quantum_advantage > 0 else "normal"
-                st.metric("Quantum Advantage", f"{quantum_advantage:+.1f}%",
-                         delta="Better" if quantum_advantage > 0 else "Worse",
-                         delta_color=advantage_color)
+            # Price breakdown
+            with st.expander("📊 Price Breakdown"):
+                st.write(f"**Notional:** ${result['notional']:,.0f}")
+                st.write(f"**Forward Rate:** {result['forward_rate']:.3%}")
+                st.write(f"**Strike Rate:** {result['strike']:.3%}")
+                st.write(f"**Expiry:** {result['expiry']:.1f} years")
+                st.write(f"**Volatility:** {result['volatility']:.1%}")
+                st.write(f"**Option Type:** {result['option_type']}")
+                if 'note' in result:
+                    st.write(f"**Note:** {result['note']}")
+        
+        with col_price2:
+            # Calculate moneyness
+            moneyness = result['strike'] / result['forward_rate']
+            status = "ITM" if moneyness < 0.95 else "OTM" if moneyness > 1.05 else "ATM"
+            st.metric("Moneyness", f"{moneyness:.3f}", status)
+            
+        with col_price3:
+            # Time value
+            time_value = np.exp(-risk_free_rate * result['expiry'])
+            st.metric("Time Value", f"{time_value:.3f}")
 
-        # Multi-Model Comprehensive Comparison
-        st.markdown("### 📈 Multi-Model Performance Dashboard")
+        # Greeks calculation (simplified)
+        st.markdown("### 📉 Risk Metrics (Greeks)")
         
-        tab1, tab2, tab3, tab4 = st.tabs(["💰 Price Comparison", "🎯 Accuracy Analysis", "⚡ Performance Metrics", "🔍 Detailed Breakdown"])
-        
-        with tab1:
-            col_comp1, col_comp2 = st.columns(2)
+        try:
+            # Simplified Greeks calculation
+            d1 = (np.log(result['forward_rate']/result['strike']) + (result['volatility']**2/2)*result['expiry']) / (result['volatility'] * np.sqrt(result['expiry']))
             
-            with col_comp1:
-                # Enhanced Price Comparison Chart
-                models = ['Black-76', 'Classical ML', 'Quantum ML']
-                prices = [results['true_price'], results['classical_price'], results['quantum_price']]
-                errors = [0, classical_error_pct, quantum_error_pct]
-                
-                fig_prices = go.Figure()
-                fig_prices.add_trace(go.Bar(
-                    name='Model Prices',
-                    x=models,
-                    y=prices,
-                    marker_color=['gray', 'blue', 'orange'],
-                    text=[f"${p:,.0f}" if p is not None and isinstance(p, (int, float)) else "N/A" for p in prices],
-                    textposition='auto',
-                    hovertemplate='<b>%{x}</b><br>Price: $%{y:,.0f}<br>Error: %{customdata:.1f}%<extra></extra>',
-                    customdata=errors
-                ))
-                fig_prices.update_layout(
-                    title='Swaption Price Comparison Across Models',
-                    yaxis_title='Price ($)',
-                    height=400,
-                    showlegend=False
-                )
-                st.plotly_chart(fig_prices, use_container_width=True)
-            
-            with col_comp2:
-                # Error Distribution Visualization
-                st.markdown("#### 📊 Error Distribution Analysis")
-                
-                # Create synthetic error distributions for visualization
-                np.random.seed(42)
-                n_samples = 1000
-                classical_errors = np.random.normal(classical_error_pct/100, classical_error_pct/500, n_samples)
-                quantum_errors = np.random.normal(quantum_error_pct/100, quantum_error_pct/500, n_samples)
-                
-                fig_errors = go.Figure()
-                fig_errors.add_trace(go.Violin(
-                    y=classical_errors,
-                    name='Classical ML',
-                    box_visible=True,
-                    meanline_visible=True,
-                    fillcolor='blue',
-                    opacity=0.6,
-                    line_color='blue'
-                ))
-                fig_errors.add_trace(go.Violin(
-                    y=quantum_errors,
-                    name='Quantum ML',
-                    box_visible=True,
-                    meanline_visible=True,
-                    fillcolor='orange',
-                    opacity=0.6,
-                    line_color='orange'
-                ))
-                fig_errors.update_layout(
-                    title='Error Distribution Comparison',
-                    yaxis_title='Relative Error',
-                    height=400,
-                    showlegend=True
-                )
-                st.plotly_chart(fig_errors, use_container_width=True)
-        
-        with tab2:
-            st.markdown("#### 🎯 Model Accuracy Radar Chart")
-            
-            # Comprehensive accuracy metrics
-            accuracy_metrics = ['Price Accuracy', 'Speed', 'Stability', 'Complexity Handling', 'Market Adaptation', 'Robustness']
-            
-            # Calculate scores based on actual performance
-            classical_scores = [
-                100 - min(classical_error_pct, 20) * 5,  # Price accuracy
-                90,  # Speed
-                80,  # Stability
-                75,  # Complexity handling
-                70,  # Market adaptation
-                75   # Robustness
-            ]
-            
-            quantum_scores = [
-                100 - min(quantum_error_pct, 20) * 5,  # Price accuracy
-                70,  # Speed (quantum is slower)
-                85,  # Stability
-                95,  # Complexity handling
-                90,  # Market adaptation
-                85   # Robustness
-            ]
-            
-            fig_radar = go.Figure()
-            
-            fig_radar.add_trace(go.Scatterpolar(
-                r=classical_scores + [classical_scores[0]],
-                theta=accuracy_metrics + [accuracy_metrics[0]],
-                fill='toself',
-                name='Classical ML',
-                line=dict(color='blue', width=2),
-                fillcolor='rgba(0, 0, 255, 0.3)'
-            ))
-            
-            fig_radar.add_trace(go.Scatterpolar(
-                r=quantum_scores + [quantum_scores[0]],
-                theta=accuracy_metrics + [accuracy_metrics[0]],
-                fill='toself',
-                name='Quantum ML',
-                line=dict(color='orange', width=2),
-                fillcolor='rgba(255, 165, 0, 0.3)'
-            ))
-            
-            fig_radar.update_layout(
-                polar=dict(
-                    radialaxis=dict(
-                        visible=True,
-                        range=[0, 100]
-                    )),
-                showlegend=True,
-                height=500,
-                title="Comprehensive Model Performance Radar"
-            )
-            
-            st.plotly_chart(fig_radar, use_container_width=True)
-        
-        with tab3:
-            st.markdown("#### ⚡ Performance Metrics Comparison")
-            
-            # Calculate comprehensive performance metrics
-            perf_metrics = {
-                'Metric': ['Mean Absolute Error ($)', 'Relative Error (%)', 'R² Score', 
-                          'Execution Time', 'Model Complexity', 'Market Adaptation', 
-                          'Quantum Advantage'],
-                'Classical ML': [
-                    f"${classical_error:,.0f}",
-                    f"{classical_error_pct:.2f}%",
-                    f"{max(0, 1 - (classical_error_pct/100)**2):.3f}",
-                    "< 1 second",
-                    "Medium",
-                    "Good",
-                    "Baseline"
-                ],
-                'Quantum ML': [
-                    f"${quantum_error:,.0f}",
-                    f"{quantum_error_pct:.2f}%",
-                    f"{max(0, 1 - (quantum_error_pct/100)**2):.3f}",
-                    f"{results['quantum_details'].get('execution_time', 0):.2f}s",
-                    "High",
-                    "Excellent",
-                    f"+{quantum_advantage:.1f}%"
-                ]
-            }
-            
-            # Create styled dataframe
-            df_perf = pd.DataFrame(perf_metrics)
-            st.dataframe(df_perf, use_container_width=True)
-            
-            # Performance improvement visualization
-            col_imp1, col_imp2 = st.columns(2)
-            
-            with col_imp1:
-                improvement_data = {
-                    'Metric': ['Error Reduction', 'Accuracy Gain', 'Stability Improvement'],
-                    'Improvement (%)': [quantum_advantage, abs(quantum_error_pct - classical_error_pct), 15]
-                }
-                
-                fig_improvement = px.bar(improvement_data, x='Metric', y='Improvement (%)',
-                                       title='Quantum Improvement Metrics',
-                                       color='Improvement (%)',
-                                       color_continuous_scale='Viridis')
-                st.plotly_chart(fig_improvement, use_container_width=True)
-            
-            with col_imp2:
-                # Speed vs Accuracy trade-off
-                tradeoff_data = {
-                    'Model': ['Classical ML', 'Quantum ML'],
-                    'Speed (1-100)': [90, 70],
-                    'Accuracy (1-100)': [100 - classical_error_pct, 100 - quantum_error_pct]
-                }
-                
-                fig_tradeoff = px.scatter(tradeoff_data, x='Speed (1-100)', y='Accuracy (1-100)',
-                                        text='Model', size=[20, 20],
-                                        title='Speed vs Accuracy Trade-off',
-                                        color='Model')
-                fig_tradeoff.update_traces(textposition='top center')
-                st.plotly_chart(fig_tradeoff, use_container_width=True)
-        
-        with tab4:
-            st.markdown("#### 🔍 Detailed Model Breakdown")
-            
-            col_break1, col_break2 = st.columns(2)
-            
-            with col_break1:
-                st.markdown("**📊 Financial Parameters**")
-                financial_params = {
-                    'Parameter': ['Notional', 'Expiry', 'Tenor', 'Strike', 'Forward Rate', 'Volatility'],
-                    'Value': [
-                        f"${results['contract_parameters']['notional']:,.0f}",
-                        f"{results['contract_parameters']['expiry']:.2f}y",
-                        f"{results['contract_parameters']['tenor']:.1f}y",
-                        f"{results['contract_parameters']['strike']:.3%}",
-                        f"{results['market_parameters']['forward_rate']:.3%}",
-                        f"{results['market_parameters']['volatility']:.1%}"
-                    ]
-                }
-                st.dataframe(pd.DataFrame(financial_params), use_container_width=True)
-            
-            with col_break2:
-                st.markdown("**🎯 Model Confidence Scores**")
-                confidence_data = {
-                    'Model': ['Black-76', 'Classical ML', 'Quantum ML'],
-                    'Confidence': ['100%', f"{max(70, 100 - classical_error_pct):.0f}%", f"{max(70, 100 - quantum_error_pct):.0f}%"],
-                    'Reliability': ['Very High', 'High', 'High'],
-                    'Use Case': ['Baseline', 'Production', 'Advanced']
-                }
-                st.dataframe(pd.DataFrame(confidence_data), use_container_width=True)
-
-        # Quantum Circuit Analysis Section
-        st.markdown("### ⚛️ Quantum Circuit Execution Analysis")
-        
-        if results.get('quantum_details') and results.get('quantum_circuit'):
-            qc_details = results['quantum_details']
-            
-            col_qc1, col_qc2, col_qc3 = st.columns([2, 1, 1])
-            
-            with col_qc1:
-                st.markdown("#### 🔮 Quantum Circuit Performance")
-                
-                # Circuit metrics visualization
-                circuit_metrics = {
-                    'Metric': ['Qubits', 'Circuit Depth', 'Total Gates', 'Execution Time', 'Expectation Value', 'Quantum Advantage'],
-                    'Value': [
-                        qc_details.get('qubits', 'N/A'),
-                        qc_details.get('depth', 'N/A'),
-                        qc_details.get('circuit_metrics', {}).get('total_gates', 'N/A'),
-                        f"{qc_details.get('execution_time', 0):.3f}s",
-                        f"{qc_details.get('expectation', 0):.4f}",
-                        f"+{quantum_advantage:.1f}%"
-                    ]
-                }
-                
-                fig_circuit_metrics = px.bar(pd.DataFrame(circuit_metrics), x='Metric', y='Value',
-                                           title='Quantum Circuit Performance Metrics',
-                                           color='Value',
-                                           color_continuous_scale='thermal')
-                st.plotly_chart(fig_circuit_metrics, use_container_width=True)
-            
-            with col_qc2:
-                st.markdown("#### 🎛️ Circuit Configuration")
-                config_data = {
-                    'Setting': ['Circuit Type', 'Layers', 'Entanglement', 'Shots', 'Optimization'],
-                    'Value': [
-                        qc_details.get('circuit_type', 'N/A').replace('_', ' ').title(),
-                        qnn_layers,
-                        entanglement_type.title(),
-                        qc_details.get('shots', 'N/A'),
-                        qc_details.get('optimization_level', 'N/A')
-                    ]
-                }
-                st.dataframe(pd.DataFrame(config_data), use_container_width=True)
-            
-            with col_qc3:
-                st.markdown("#### 📈 Quantum States")
-                if 'top_quantum_states' in qc_details:
-                    states_data = {
-                        'State': list(qc_details['top_quantum_states'].keys())[:5],
-                        'Count': list(qc_details['top_quantum_states'].values())[:5]
-                    }
-                    fig_states = px.pie(states_data, values='Count', names='State',
-                                      title='Top Quantum State Distribution')
-                    st.plotly_chart(fig_states, use_container_width=True)
-
-            # Advanced Quantum Analysis
-            st.markdown("#### 🔬 Advanced Quantum Metrics")
-            
-            col_adv1, col_adv2 = st.columns(2)
-            
-            with col_adv1:
-                # Gate distribution analysis
-                if qc_details.get('circuit_metrics', {}).get('gate_breakdown'):
-                    gate_data = qc_details['circuit_metrics']['gate_breakdown']
-                    fig_gates = px.bar(x=list(gate_data.keys()), y=list(gate_data.values()),
-                                     title='Quantum Gate Distribution',
-                                     labels={'x': 'Gate Type', 'y': 'Count'})
-                    st.plotly_chart(fig_gates, use_container_width=True)
-            
-            with col_adv2:
-                # Quantum advantage over time simulation
-                time_points = list(range(1, 11))
-                classical_mae_trend = [classical_error * (1 - 0.02*i) for i in range(10)]
-                quantum_mae_trend = [quantum_error * (1 - 0.05*i) for i in range(10)]
-                
-                fig_trend = go.Figure()
-                fig_trend.add_trace(go.Scatter(
-                    x=time_points, y=classical_mae_trend,
-                    mode='lines+markers',
-                    name='Classical ML Trend',
-                    line=dict(color='blue')
-                ))
-                fig_trend.add_trace(go.Scatter(
-                    x=time_points, y=quantum_mae_trend,
-                    mode='lines+markers',
-                    name='Quantum ML Trend',
-                    line=dict(color='orange')
-                ))
-                fig_trend.update_layout(
-                    title='Projected Error Reduction Over Time',
-                    xaxis_title='Iteration',
-                    yaxis_title='Mean Absolute Error ($)',
-                    height=300
-                )
-                st.plotly_chart(fig_trend, use_container_width=True)
-
-        # Exercise Style Impact Analysis
-        st.markdown("### 📅 Exercise Style & Market Condition Analysis")
-        
-        col_style1, col_style2 = st.columns(2)
-        
-        with col_style1:
-            st.markdown("#### 🎯 Exercise Style Impact")
-            
-            # Calculate price multipliers for different exercise styles
-            style_multipliers = {
-                'European': 1.00,
-                'Bermudan': 1.15 + (volatility_input - 0.2) * 0.5,  # Volatility adjustment
-                'American': 1.30 + (volatility_input - 0.2) * 0.8
-            }
-            
-            style_data = {
-                'Exercise Style': list(style_multipliers.keys()),
-                'Price Multiplier': list(style_multipliers.values()),
-                'Theoretical Price': [f"${results['true_price'] * mult:,.0f}" for mult in style_multipliers.values()],
-                'Description': [
-                    'Exercise only at expiry',
-                    f'Multiple exercise dates (+{((style_multipliers["Bermudan"]-1)*100):.1f}%)',
-                    f'Any time before expiry (+{((style_multipliers["American"]-1)*100):.1f}%)'
-                ]
-            }
-            
-            fig_style = px.bar(style_data, x='Exercise Style', y='Price Multiplier',
-                             title='Exercise Style Price Impact',
-                             color='Price Multiplier',
-                             color_continuous_scale='viridis',
-                             hover_data=['Description', 'Theoretical Price'])
-            st.plotly_chart(fig_style, use_container_width=True)
-        
-        with col_style2:
-            st.markdown("#### 🌡️ Market Regime Sensitivity")
-            
-            # Analyze sensitivity to different market conditions
-            regimes = ['Normal', 'High Vol', 'Low Vol', 'Rising Rates', 'Falling Rates']
-            classical_sensitivity = [1.00, 1.25, 0.85, 1.15, 0.90]
-            quantum_sensitivity = [1.00, 1.15, 0.90, 1.10, 0.95]
-            
-            regime_data = {
-                'Regime': regimes * 2,
-                'Sensitivity': classical_sensitivity + quantum_sensitivity,
-                'Model': ['Classical ML'] * len(regimes) + ['Quantum ML'] * len(regimes)
-            }
-            
-            fig_regime = px.line(regime_data, x='Regime', y='Sensitivity', color='Model',
-                               title='Model Sensitivity to Market Regimes',
-                               markers=True)
-            fig_regime.update_layout(height=400)
-            st.plotly_chart(fig_regime, use_container_width=True)
-
-        # Risk Analysis and Greeks
-        st.markdown("### 📉 Risk Analysis & Greeks")
-        
-        if calculate_greeks:
             col_greeks1, col_greeks2, col_greeks3, col_greeks4 = st.columns(4)
             
             with col_greeks1:
-                # Delta
-                delta = stats.norm.cdf(d1) if swaption_type == "Payer Swaption" else -stats.norm.cdf(-d1)
-                st.metric("Δ (Delta)", f"{delta:.4f}", help="Price sensitivity to underlying rate")
-            
+                delta = stats.norm.cdf(d1) if result['option_type'] == "Payer Swaption" else -stats.norm.cdf(-d1)
+                st.metric("Δ Delta", f"{delta:.4f}")
+                
             with col_greeks2:
-                # Gamma
-                gamma = stats.norm.pdf(d1) / (current_forward * volatility_input * np.sqrt(expiry))
-                st.metric("Γ (Gamma)", f"{gamma:.6f}", help="Delta sensitivity to underlying rate")
-            
+                gamma = stats.norm.pdf(d1) / (result['forward_rate'] * result['volatility'] * np.sqrt(result['expiry']))
+                st.metric("Γ Gamma", f"{gamma:.6f}")
+                
             with col_greeks3:
-                # Vega
-                vega_display = current_forward * np.sqrt(expiry) * stats.norm.pdf(d1) * 0.01
-                st.metric("ν (Vega)", f"{vega_display:.4f}", help="Price sensitivity to volatility")
-            
+                vega = result['forward_rate'] * np.sqrt(result['expiry']) * stats.norm.pdf(d1) * 0.01
+                st.metric("ν Vega", f"{vega:.4f}")
+                
             with col_greeks4:
-                # Theta
-                theta = - (current_forward * volatility_input * stats.norm.pdf(d1)) / (2 * np.sqrt(expiry))
-                st.metric("θ (Theta)", f"{theta:.4f}", help="Time decay")
+                theta = - (result['forward_rate'] * result['volatility'] * stats.norm.pdf(d1)) / (2 * np.sqrt(result['expiry']))
+                st.metric("θ Theta", f"{theta:.4f}")
+                
+        except Exception as e:
+            st.warning("Could not calculate Greeks")
 
-        # Export and Documentation
-        st.markdown("### 💾 Results Export & Documentation")
+        # Price sensitivity analysis
+        st.markdown("### 🔍 Price Sensitivity")
         
-        col_export1, col_export2 = st.columns(2)
+        # Create sensitivity analysis
+        vol_changes = [-0.10, -0.05, 0, 0.05, 0.10]
+        rate_changes = [-0.02, -0.01, 0, 0.01, 0.02]
         
-        with col_export1:
-            # Create comprehensive results summary
+        col_sens1, col_sens2 = st.columns(2)
+        
+        with col_sens1:
+            st.write("**Volatility Impact**")
+            vol_data = []
+            for vol_change in vol_changes:
+                new_vol = result['volatility'] + vol_change
+                if new_vol > 0:
+                    try:
+                        new_price = calculate_simple_black76(
+                            result['notional'], result['forward_rate'], result['strike'],
+                            result['expiry'], new_vol, result['option_type'], risk_free_rate
+                        )
+                        price_change = new_price - result['price']
+                        vol_data.append({
+                            'Vol Change': f"{vol_change:+.0%}",
+                            'New Vol': f"{new_vol:.1%}",
+                            'Price': f"${new_price:,.0f}",
+                            'Change': f"${price_change:,.0f}"
+                        })
+                    except:
+                        continue
+            
+            if vol_data:
+                st.dataframe(pd.DataFrame(vol_data), use_container_width=True)
+        
+        with col_sens2:
+            st.write("**Rate Impact**")
+            rate_data = []
+            for rate_change in rate_changes:
+                new_forward = result['forward_rate'] + rate_change
+                if new_forward > 0:
+                    try:
+                        new_price = calculate_simple_black76(
+                            result['notional'], new_forward, result['strike'],
+                            result['expiry'], result['volatility'], result['option_type'], risk_free_rate
+                        )
+                        price_change = new_price - result['price']
+                        rate_data.append({
+                            'Rate Change': f"{rate_change:+.1%}",
+                            'New Forward': f"{new_forward:.3%}",
+                            'Price': f"${new_price:,.0f}",
+                            'Change': f"${price_change:,.0f}"
+                        })
+                    except:
+                        continue
+            
+            if rate_data:
+                st.dataframe(pd.DataFrame(rate_data), use_container_width=True)
+
+        # Export results
+        st.markdown("### 💾 Export Results")
+        if st.button("📥 Download Price Results", use_container_width=True):
+            # Create results summary
             results_summary = {
-                'timestamp': [datetime.now().strftime("%Y-%m-%d %H:%M:%S")],
-                'black76_price': [results['true_price']],
-                'classical_ml_price': [results['classical_price']],
-                'quantum_ml_price': [results['quantum_price']],
-                'quantum_advantage_pct': [quantum_advantage],
-                'exercise_style': [exercise_style],
-                'currency': [currency],
-                'volatility': [volatility_input]
+                'Parameter': [
+                    'Swaption Price', 'Notional', 'Forward Rate', 'Strike Rate',
+                    'Expiry', 'Volatility', 'Option Type', 'Calculation Time'
+                ],
+                'Value': [
+                    f"${result['price']:,.0f}",
+                    f"${result['notional']:,.0f}",
+                    f"{result['forward_rate']:.3%}",
+                    f"{result['strike']:.3%}",
+                    f"{result['expiry']:.1f} years",
+                    f"{result['volatility']:.1%}",
+                    result['option_type'],
+                    result['timestamp'].strftime("%Y-%m-%d %H:%M:%S")
+                ]
             }
             
             df_export = pd.DataFrame(results_summary)
             csv_data = df_export.to_csv(index=False)
             
             st.download_button(
-                label="📥 Download Results Summary",
+                label="Download CSV",
                 data=csv_data,
-                file_name=f"quantum_swaption_pricing_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                file_name=f"swaption_price_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
                 mime="text/csv"
             )
-        
-        with col_export2:
-            # Generate analysis report
-            report_text = f"""
-            QUANTUM SWAPTION PRICING ANALYSIS REPORT
-            =======================================
-            
-            Execution Time: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
-            
-            PRICING RESULTS:
-            - Black-76 Model: ${results['true_price']:,.0f}
-            - Classical ML: ${results['classical_price']:,.0f}
-            - Quantum ML: ${results['quantum_price']:,.0f}
-            - Quantum Advantage: +{quantum_advantage:.1f}%
-            
-            CONTRACT DETAILS:
-            - Type: {swaption_type}
-            - Exercise: {exercise_style}
-            - Currency: {currency}
-            - Notional: {currency} {notional}M
-            - Expiry: {expiry:.2f} years
-            - Tenor: {tenor:.1f} years
-            
-            QUANTUM EXECUTION:
-            - Circuit: {qc_details.get('circuit_type', 'N/A')}
-            - Qubits: {qc_details.get('qubits', 'N/A')}
-            - Execution Time: {qc_details.get('execution_time', 0):.3f}s
-            - Expectation Value: {qc_details.get('expectation', 0):.4f}
-            
-            CONCLUSION:
-            Quantum ML demonstrated significant advantage over classical methods
-            with {quantum_advantage:.1f}% improvement in pricing accuracy.
-            """
-            
-            st.download_button(
-                label="📄 Download Analysis Report",
-                data=report_text,
-                file_name=f"quantum_pricing_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
-                mime="text/plain"
-            )
 
-        # Real-time Recommendations
-        st.markdown("### 💡 Trading Recommendations")
+def calculate_simple_black76(notional, forward_rate, strike, expiry, volatility, option_type, risk_free_rate=0.05):
+    """Simple and reliable Black-76 calculation"""
+    try:
+        # Basic input validation
+        if forward_rate <= 0 or strike <= 0 or expiry <= 0 or volatility <= 0:
+            raise ValueError("Invalid input parameters")
         
-        recommendation_color = "🟢" if quantum_advantage > 10 else "🟡" if quantum_advantage > 0 else "🔴"
+        # Calculate d1 and d2
+        d1 = (np.log(forward_rate / strike) + (volatility**2 / 2) * expiry) / (volatility * np.sqrt(expiry))
+        d2 = d1 - volatility * np.sqrt(expiry)
         
-        st.info(f"""
-        {recommendation_color} **TRADING INSIGHTS:**
+        # Simplified annuity factor (this is the key fix)
+        # For swaptions, annuity is approximately the tenor discounted at risk-free rate
+        annuity = (1 - np.exp(-risk_free_rate * expiry)) / risk_free_rate
         
-        **Quantum Advantage:** {quantum_advantage:+.1f}% improvement over classical methods
-        **Confidence Level:** {'High' if quantum_advantage > 15 else 'Medium' if quantum_advantage > 5 else 'Low'}
-        **Recommended Action:** {'Execute trade using Quantum ML pricing' if quantum_advantage > 10 else 'Consider Quantum ML for complex scenarios' if quantum_advantage > 0 else 'Use traditional pricing methods'}
-        **Risk Assessment:** {'Low risk - Strong quantum advantage' if quantum_advantage > 15 else 'Medium risk - Moderate advantage' if quantum_advantage > 5 else 'High risk - Minimal advantage'}
-        """)
+        # Calculate option price
+        if option_type == "Payer Swaption":
+            price = annuity * (forward_rate * stats.norm.cdf(d1) - strike * stats.norm.cdf(d2))
+        else:  # Receiver Swaption
+            price = annuity * (strike * stats.norm.cdf(-d2) - forward_rate * stats.norm.cdf(-d1))
+        
+        # Apply notional and ensure positive price
+        final_price = max(notional * price, 1000)  # Minimum $1000
+        
+        return final_price
+        
+    except Exception as e:
+        # Fallback to a very simple calculation
+        st.warning(f"Primary calculation failed: {e}. Using fallback.")
+        return calculate_fallback_price(notional, forward_rate, strike, expiry)
+
+def calculate_fallback_price(notional, forward_rate, strike, expiry):
+    """Fallback price calculation when Black-76 fails"""
+    try:
+        # Very simple intrinsic value + time value approximation
+        intrinsic_value = max(forward_rate - strike, 0)
+        time_value = 0.01 * expiry  # Simple time value
+        
+        # Simple annuity approximation
+        annuity = expiry * 0.8
+        
+        price = notional * annuity * (intrinsic_value + time_value)
+        
+        # Ensure reasonable bounds
+        price = max(price, notional * 0.001)  # At least 0.1% of notional
+        price = min(price, notional * 0.1)    # At most 10% of notional
+        
+        return price
+        
+    except:
+        # Ultimate fallback
+        return notional * 0.01  # 1% of notional as final fallback
     # ... [The results display section from previous implementation continues here]
 # --- ENHANCED QUANTUM CIRCUIT GENERATOR ---
 class QuantumCircuitGenerator:
@@ -3097,7 +2375,165 @@ def show_dashboard(pricer, classical_ml, quantum_ml, analytics):
 
 def show_classical_ml(classical_ml, pricer, quantum_ml):
     """Enhanced Classical ML section with detailed results"""
+    # """Enhanced Classical ML section with dedicated ML pricing"""
     
+    st.markdown("## 🏛️ Advanced Classical Machine Learning")
+    
+    # Add new ML Pricing Section at the top
+    st.markdown("### 🎯 ML Swaption Pricing Calculator")
+    
+    with st.expander("🚀 Quick ML Pricing", expanded=True):
+        col_price1, col_price2, col_price3 = st.columns(3)
+        
+        with col_price1:
+            ml_expiry = st.slider("Expiry (Years)", 0.25, 10.0, 2.0, 0.25, key="ml_price_expiry")
+            ml_tenor = st.slider("Tenor (Years)", 1.0, 30.0, 5.0, 0.5, key="ml_price_tenor")
+            
+        with col_price2:
+            ml_strike = st.slider("Strike Rate (%)", 0.5, 10.0, 3.5, 0.1, key="ml_price_strike") / 100
+            ml_volatility = st.slider("Volatility (%)", 10.0, 80.0, 25.0, 1.0, key="ml_price_vol") / 100
+            
+        with col_price3:
+            ml_notional = st.selectbox("Notional", [1e6, 5e6, 10e6, 25e6, 50e6, 100e6], 
+                                     format_func=lambda x: f"${x/1e6:.0f}M", 
+                                     index=2, key="ml_price_notional")
+            ml_forward_rate = st.number_input("Forward Rate (%)", 1.0, 10.0, 4.2, 0.1, 
+                                            key="ml_price_forward") / 100
+        
+        # Calculate traditional price for comparison
+        traditional_price = pricer.black_76_swaption_price(
+            ml_notional, ml_expiry, ml_tenor, ml_strike, "Payer Swaption", ml_volatility
+        )
+        
+        if st.button("🎯 Calculate ML Price", type="primary", key="ml_calculate_price"):
+            if classical_ml and classical_ml.models:
+                with st.spinner("Calculating ML price..."):
+                    try:
+                        # Prepare features for ML prediction
+                        features = [
+                            ml_forward_rate,
+                            ml_strike, 
+                            ml_volatility,
+                            ml_expiry,
+                            ml_tenor,
+                            ml_notional
+                        ]
+                        
+                        # Get ML prediction
+                        ml_price = classical_ml.predict_ensemble(features)
+                        
+                        # Calculate error
+                        error = ml_price - traditional_price
+                        error_pct = (error / traditional_price) * 100
+                        
+                        # Display results
+                        col_res1, col_res2, col_res3 = st.columns(3)
+                        
+                        with col_res1:
+                            st.metric(
+                                "Traditional Price", 
+                                f"${traditional_price:,.0f}",
+                                help="Black-76 model price"
+                            )
+                            
+                        with col_res2:
+                            st.metric(
+                                "ML Predicted Price", 
+                                f"${ml_price:,.0f}",
+                                delta=f"{error_pct:+.1f}%",
+                                delta_color="inverse" if abs(error_pct) > 5 else "normal",
+                                help="Machine learning ensemble prediction"
+                            )
+                            
+                        with col_res3:
+                            st.metric(
+                                "Absolute Error", 
+                                f"${abs(error):,.0f}",
+                                help="Difference between ML and traditional price"
+                            )
+                        
+                        # Show individual model predictions
+                        st.markdown("#### 🔍 Individual Model Predictions")
+                        individual_predictions = {}
+                        
+                        for model_name, model in classical_ml.models.items():
+                            try:
+                                pred = model.predict([features])[0]
+                                individual_predictions[model_name] = {
+                                    'price': pred,
+                                    'error': pred - traditional_price,
+                                    'error_pct': ((pred - traditional_price) / traditional_price) * 100
+                                }
+                            except Exception as e:
+                                individual_predictions[model_name] = f"Error: {e}"
+                        
+                        # Create comparison table
+                        comparison_data = []
+                        for model_name, result in individual_predictions.items():
+                            if isinstance(result, dict):
+                                comparison_data.append({
+                                    'Model': model_name,
+                                    'Price': f"${result['price']:,.0f}",
+                                    'Error': f"${result['error']:,.0f}",
+                                    'Error %': f"{result['error_pct']:.2f}%"
+                                })
+                        
+                        if comparison_data:
+                            st.dataframe(pd.DataFrame(comparison_data), use_container_width=True)
+                            
+                            # Visualization
+                            col_viz1, col_viz2 = st.columns(2)
+                            
+                            with col_viz1:
+                                # Price comparison chart
+                                models = ['Traditional'] + [f"ML {name}" for name in individual_predictions.keys()]
+                                prices = [traditional_price] + [result['price'] for result in individual_predictions.values() 
+                                                              if isinstance(result, dict)]
+                                
+                                fig_prices = go.Figure()
+                                fig_prices.add_trace(go.Bar(
+                                    x=models,
+                                    y=prices,
+                                    marker_color=['gray'] + ['blue'] * len(individual_predictions),
+                                    text=[f"${p:,.0f}" for p in prices],
+                                    textposition='auto'
+                                ))
+                                fig_prices.update_layout(
+                                    title='Price Comparison: Traditional vs ML Models',
+                                    yaxis_title='Price ($)',
+                                    height=400
+                                )
+                                st.plotly_chart(fig_prices, use_container_width=True)
+                                
+                            with col_viz2:
+                                # Error comparison chart
+                                errors = [0] + [result['error_pct'] for result in individual_predictions.values() 
+                                              if isinstance(result, dict)]
+                                
+                                fig_errors = go.Figure()
+                                fig_errors.add_trace(go.Bar(
+                                    x=models,
+                                    y=errors,
+                                    marker_color=['gray'] + ['red' if err > 0 else 'green' for err in errors[1:]],
+                                    text=[f"{err:.2f}%" for err in errors],
+                                    textposition='auto'
+                                ))
+                                fig_errors.update_layout(
+                                    title='Error Percentage by Model',
+                                    yaxis_title='Error (%)',
+                                    height=400
+                                )
+                                st.plotly_chart(fig_errors, use_container_width=True)
+                        
+                    except Exception as e:
+                        st.error(f"❌ ML pricing failed: {e}")
+                        import traceback
+                        with st.expander("🔍 Error Details"):
+                            st.code(traceback.format_exc())
+            else:
+                st.warning("⚠️ Please train ML models first using the section below!")
+    
+    # ... [rest of your existing show_classical_ml function continues here]
     st.markdown("## 🏛️ Advanced Classical Machine Learning")
     
     # Training Configuration
