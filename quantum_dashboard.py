@@ -1470,27 +1470,8 @@ def show_live_pricing(pricer, classical_ml, quantum_ml):
                     """
                     st.code(circuit_text, language='text')
                     
-        except Exception as e:
-            st.warning(f"Circuit preview generation failed: {e}")
-    def get_currency_specific_rates(currency, country, market_data):
-    """Get currency-specific market rates"""
-    currency_rates = {
-        'USD': {'base_rate': 0.0530, 'base_rate_name': 'SOFR', 'long_rate': 0.0410},
-        'EUR': {'base_rate': 0.0350, 'base_rate_name': 'ESTR', 'long_rate': 0.0320},
-        'GBP': {'base_rate': 0.0525, 'base_rate_name': 'SONIA', 'long_rate': 0.0400},
-        'JPY': {'base_rate': 0.0010, 'base_rate_name': 'TONAR', 'long_rate': 0.0080},
-        'CHF': {'base_rate': 0.0150, 'base_rate_name': 'SARON', 'long_rate': 0.0250}
-    }
-    
-    base_rates = currency_rates.get(currency, currency_rates['USD'])
-    return {
-        **base_rates,
-        'swap_rate': base_rates['base_rate'] - 0.01,
-        'vol_index': 15.5,
-        'vol_name': 'VIX',
-        'money_rate': base_rates['base_rate'] + 0.0035,
-        'money_name': 'LIBOR 3M'
-    }
+            except Exception as e:
+                st.warning(f"Circuit preview generation failed: {e}")
     # Pricing Execution with Enhanced Options
     st.markdown("### 🚀 Execute Advanced Pricing")
     
