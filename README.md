@@ -264,16 +264,6 @@ Financial Data → Quantum Encoding → QNN Circuit → Expectation → Final Sw
 
 ---
 
-## 🗣️ Enhanced Presentation Tips for Qiskit Hackathon
-
-- **Start with Current Market Context**: "With SOFR at 5.30% and VIX at 15.5, traditional swaption pricing struggles - our quantum solution delivers 32% better accuracy!"
-- **Live Demo with Real Data**: Showcase the enhanced dashboard with current market rates and quantum advantage visualization
-- **Parameter Notation**: Explain T, τ, K, σ, N notation and their practical limits in financial trading
-- **Quantum Advantage Metrics**: Demonstrate live pricing showing quantum ML outperforming classical ML by 25-43%
-- **Technical Innovation**: Highlight QNN circuit architectures and how they capture complex financial correlations
-- **48-Hour Achievement**: Emphasize building production-ready quantum finance solution within hackathon timeframe
-
----
 
 ## 📚 Tools Used
 
