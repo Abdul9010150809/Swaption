@@ -1228,7 +1228,62 @@ def show_live_pricing(pricer, classical_ml, quantum_ml):
                     'note': 'Used fallback calculation'
                 }
                 st.warning(f"⚠️ Using fallback calculation: ${fallback_price:,.0f}")
-
+def add_quantum_pricing_section(quantum_ml, pricing_parameters):
+    """Add quantum pricing to the traditional calculator"""
+    
+    st.markdown("### ⚛️ Quantum Enhancement")
+    
+    if st.checkbox("Enable Quantum Pricing", value=False):
+        st.info("Quantum ML will adjust the traditional price based on quantum circuit expectations")
+        
+        # Quantum configuration
+        col_q1, col_q2 = st.columns(2)
+        
+        with col_q1:
+            quantum_circuit = st.selectbox(
+                "Quantum Circuit Type",
+                ["feature_map_advanced", "variational_advanced", "quantum_neural_network"],
+                key="quantum_circuit"
+            )
+            quantum_shots = st.slider("Quantum Shots", 100, 5000, 1000)
+            
+        with col_q2:
+            quantum_weight = st.slider("Quantum Influence", 0.0, 1.0, 0.3, 
+                                     help="How much quantum correction to apply")
+        
+        if st.button("🔄 Calculate Quantum Price"):
+            with st.spinner("Running quantum circuit..."):
+                try:
+                    # Prepare features for quantum circuit
+                    features = [
+                        pricing_parameters['forward_rate'],
+                        pricing_parameters['strike'], 
+                        pricing_parameters['volatility'],
+                        pricing_parameters['expiry'],
+                        pricing_parameters['tenor'],
+                        pricing_parameters['notional'] / 1000000  # Scale down
+                    ]
+                    
+                    # Run quantum circuit
+                    quantum_expectation, circuit, counts = quantum_ml.run_advanced_circuit(
+                        quantum_circuit,
+                        features=features,
+                        show_diagram=True
+                    )
+                    
+                    # Apply quantum correction to traditional price
+                    traditional_price = pricing_parameters['price']
+                    quantum_correction = (quantum_expectation - 0.5) * 0.2  # Scale correction
+                    quantum_price = traditional_price * (1 + quantum_correction * quantum_weight)
+                    
+                    # Display results
+                    st.metric("Traditional Price", f"${traditional_price:,.0f}")
+                    st.metric("Quantum Expectation", f"{quantum_expectation:.4f}")
+                    st.metric("Quantum Adjusted Price", f"${quantum_price:,.0f}",
+                             delta=f"{(quantum_price - traditional_price)/traditional_price*100:+.1f}%")
+                    
+                except Exception as e:
+                    st.error(f"Quantum calculation failed: {e}")
     # Display results
     if 'live_price_result' in st.session_state:
         result = st.session_state.live_price_result
